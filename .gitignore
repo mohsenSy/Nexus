@@ -1,0 +1,6 @@
+// Test source file and executable
+test.cpp
+test
+
+// Test Bench exectables
+tb/tb_*
