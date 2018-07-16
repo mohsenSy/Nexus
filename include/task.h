@@ -10,9 +10,14 @@ typedef struct task_descriptor {
   mem_addr *in_args;
   mem_addr *out_args;
 
-  friend ostream& operator << (const ostream& os, const task_descriptor& t) {}
+  void set_input_args(int n_args, ...);
+  void set_output_args(int n_args, ...);
+  mem_addr get_input_arg(int index);
+  mem_addr get_output_arg(int index);
 
-  friend std::istream &operator >>(std::istream & in, task_descriptor & td) {
+  friend std::ostream& operator << (const ostream& os, const task_descriptor& t) {}
+
+  friend std::istream& operator >>(std::istream & in, task_descriptor & td) {
     char c;
     in >> td.id >> c >> td.delay >> c >> td.input_args >> c >> td.output_args;;
     return in;
