@@ -33,6 +33,14 @@ void core::send_task(void) {
     while(!taskFifo.nb_read(t)) {
       wait();
     }
+    int num_inputs = t.input_args;
+    // fetch input args
+    for (int i = 0; i < num_inputs; i++) {
+      // Reading from memory is modeled by a wait
+      for (int j = 0; j < MEM_FETCH_TIME; j++) {
+        wait();
+      }
+    }
     // Wait until the execution unit finishes current task
     while (rdy_sig == false) {
       wait();
