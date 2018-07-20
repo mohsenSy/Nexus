@@ -37,12 +37,14 @@ SC_MODULE(core) {
   sc_signal<bool> t_out_f_sig;
   //sc_signal<bool> finished_sig;
 
-  task ts[BUFFER_DEPTH];
+  //task ts[BUFFER_DEPTH];
+  sc_fifo<task> taskFifo;
   int num_tasks;
   task previous_task;
   bool core_rdy;
 
-  void prepare(); // Read a task and send it to execution unit.
+  void prepare(); // Read a task and add it to the FIFO.
+  void send_task(); // Read a task from FIFO, fetch its arguments and send it to execution unit
   void handle_finished(); // Read the finished task from execution unit.
 
   SC_CTOR(core) {
@@ -51,6 +53,9 @@ SC_MODULE(core) {
     t_out_v.initialize(false);
     //finished.initialize(false);
     previous_task.id = 0;
+
+    // initialize the task FIFO
+    sc_fifo<task> taskFifo (BUFFER_DEPTH);
 
     PRINTL("new core %s", name());
 
@@ -68,11 +73,8 @@ SC_MODULE(core) {
     num_tasks = 0;
     core_rdy = true;
     SC_CTHREAD(prepare, clk.pos());
-    //SC_THREAD(prepare);
-    //sensitive << clk;
+    SC_CTHREAD(send_task, clk.pos());
     SC_CTHREAD(handle_finished, clk.pos());
-    //SC_THREAD(handle_finished);
-    //sensitive << clk;
   }
 };
 

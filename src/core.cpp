@@ -27,6 +27,32 @@ void core::handle_finished(void) {
   }
 }
 
+void core::send_task(void) {
+  while (true) {
+    task t;
+    while(!taskFifo.nb_read(t)) {
+      wait();
+    }
+    // Wait until the execution unit finishes current task
+    while (rdy_sig == false) {
+      wait();
+    }
+    PRINTL("Ready to send task %d to execution unit", t.id);
+    // Send task to execution unit
+    t_in_sig = t;
+    t_in_v_sig = true;
+    wait();
+
+    while (t_in_f_sig != true) {
+      // Wait until task is read by execution unit
+      //PRINTL("Waiting for execution unit for task with id %d", t.id);
+      wait();
+    }
+    //PRINTL("Ready to send task %d to execution unit", t.id);
+    t_in_v_sig = false;
+  }
+}
+
 void core::prepare(void) {
   /*
     This function prepares the current task for execution by sending it to execute module
@@ -41,49 +67,19 @@ void core::prepare(void) {
       if (previous_task != t) {
         PRINTL("receive task with id %d", t.id);
         previous_task = t;
-        t_in_f.write(true);
-        wait();
         //PRINTL("preparing task %d", t.id);
         // If the buffer is full wait until a task finishes
-        while(num_tasks == BUFFER_DEPTH - 1) {
-          //PRINTL("task %d is waiting for buffer", t.id);
+        while(!taskFifo.nb_write(t)) {
           rdy.write(false);
-          if ( num_tasks < BUFFER_DEPTH - 1 ) {
-            PRINTL("Setting rdy to true", "");
-            rdy.write(true);
-            wait();
-            break;
-          }
           wait();
         }
-        /*if(++num_tasks == BUFFER_DEPTH) {
-          // Cannot receive any more tasks
-          //PRINTL("Setting rdy to false","");
-          rdy.write(false);
-          wait();
-        }*/
-        ts[num_tasks++] = t;
+        num_tasks++;
+        t_in_f.write(true);
+        wait();
         t_in_f.write(false);
         rdy.write(true);
         wait();
         //rdy.write(true);
-        // Wait until the execution unit finishes current task
-        while (rdy_sig == false) {
-          wait();
-        }
-        PRINTL("Ready to send task %d to execution unit", t.id);
-        // Send task to execution unit
-        t_in_sig = t;
-        t_in_v_sig = true;
-        wait();
-
-        while (t_in_f_sig != true) {
-          // Wait until task is read by execution unit
-          //PRINTL("Waiting for execution unit for task with id %d", t.id);
-          wait();
-        }
-        //PRINTL("Ready to send task %d to execution unit", t.id);
-        t_in_v_sig = false;
       }
     }
     wait();
