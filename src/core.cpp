@@ -1,5 +1,6 @@
 #include <core.h>
 #include <utils.h>
+#include <mutex>
 
 
 void core::handle_finished(void) {
@@ -9,7 +10,9 @@ void core::handle_finished(void) {
       task t = t_out_sig;
       t_out_f_sig = true;
       PRINTL("task finished %d",t.id);
-      num_tasks--;
+      this->m.lock();
+      this->num_tasks--;
+      this->m.unlock();
       //finished.write(true);
       t_out.write(t);
       t_out_v.write(true);
@@ -35,6 +38,7 @@ void core::send_task(void) {
     }
     int num_inputs = t.input_args;
     // fetch input args
+    PRINTL("fetching inputs for %d", t.id);
     for (int i = 0; i < num_inputs; i++) {
       // Reading from memory is modeled by a wait
       for (int j = 0; j < MEM_FETCH_TIME; j++) {
@@ -70,22 +74,39 @@ void core::prepare(void) {
   t_in_f.write(false);
 
   while (true) {
+    if (num_tasks == BUFFER_DEPTH) {
+      wait();
+      continue;
+    }
+    rdy.write(true);
     if(t_in_v.read()) {
       task t = t_in.read();
       if (previous_task != t) {
-        PRINTL("receive task with id %d", t.id);
         previous_task = t;
         //PRINTL("preparing task %d", t.id);
         // If the buffer is full wait until a task finishes
-        while(!taskFifo.nb_write(t)) {
+        PRINTL("BUFFER_DEPTH is %d, num_tasks is %d", BUFFER_DEPTH, this->num_tasks);
+        while(this->num_tasks == BUFFER_DEPTH) {
           rdy.write(false);
+          PRINTL("RDY is false", "");
           wait();
         }
-        num_tasks++;
+        /*while(!taskFifo.nb_write(t)) {
+          rdy.write(false);
+          PRINTL("RDY is false", "");
+          wait();
+        }*/
+        taskFifo.write(t);
+        PRINTL("receive task with id %d", t.id);
+        this->m.lock();
+        this->num_tasks++;
+        this->m.unlock();
+        if (num_tasks == BUFFER_DEPTH) {
+          rdy.write(false);
+        }
         t_in_f.write(true);
         wait();
         t_in_f.write(false);
-        rdy.write(true);
         wait();
         //rdy.write(true);
       }

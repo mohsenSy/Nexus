@@ -15,6 +15,7 @@
 #include <execute.h>
 #include <parameters.h>
 #include <utils.h>
+#include <mutex>
 
 SC_MODULE(core) {
   sc_in_clk clk;
@@ -40,6 +41,7 @@ SC_MODULE(core) {
   //task ts[BUFFER_DEPTH];
   sc_fifo<task> taskFifo;
   int num_tasks;
+  std::mutex m;
   task previous_task;
   bool core_rdy;
 
@@ -47,15 +49,12 @@ SC_MODULE(core) {
   void send_task(); // Read a task from FIFO, fetch its arguments and send it to execution unit
   void handle_finished(); // Read the finished task from execution unit.
 
-  SC_CTOR(core) {
+  SC_CTOR(core): taskFifo(BUFFER_DEPTH) {
 
     rdy.initialize(true);
     t_out_v.initialize(false);
     //finished.initialize(false);
     previous_task.id = 0;
-
-    // initialize the task FIFO
-    sc_fifo<task> taskFifo (BUFFER_DEPTH);
 
     PRINTL("new core %s", name());
 
