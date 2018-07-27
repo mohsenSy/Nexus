@@ -40,8 +40,11 @@ void printl(const char* file_name, const char* module_name, const char* fmt...){
 
 void read_tasks(std::string filename, std::vector<task> * tasks) {
   std::ifstream fin(filename.c_str(), std::ifstream::in);
-  task t;
+  task *t = new task();
 
-  while (fin>>t)
-    tasks->push_back(t);
+  while (fin>>*t){
+    t->set_input_args(0);
+    tasks->push_back(*t);
+    t = new task();
+  }
 }

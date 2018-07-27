@@ -5,6 +5,7 @@
 
 #include <task.h>
 #include <core.h>
+#include <memory.h>
 #include <string>
 
 
@@ -27,6 +28,12 @@ SC_MODULE(board) {
   sc_vector<sc_signal<bool> > rdy_sigs;
   //sc_vector<sc_signal<bool, SC_MANY_WRITERS> > finished_sigs;
 
+  memory* mem;
+  sc_signal<bool, SC_MANY_WRITERS> memory_rdy_sig;
+  sc_signal<mem_addr, SC_MANY_WRITERS> memory_addr_sig;
+  sc_signal<bool, SC_MANY_WRITERS> memory_addr_v_sig;
+  sc_signal<bool, SC_MANY_WRITERS> memory_addr_f_sig;
+
   task previous_task;
   int num_tasks;
   sc_fifo<task> taskFifo;
@@ -43,6 +50,14 @@ SC_MODULE(board) {
     //sensitive << clk;
     num_tasks = 0;
     previous_task.id = 0;
+
+    mem = new memory("memory_controller");
+    mem->clk(clk);
+    mem->rdy(memory_rdy_sig);
+    mem->addr(memory_addr_sig);
+    mem->addr_f(memory_addr_f_sig);
+    mem->addr_v(memory_addr_v_sig);
+
     // initialize the task FIFO
     sc_fifo<task> taskFifo (TASK_NUM);
     cores.init(CORE_NUM);
@@ -64,7 +79,10 @@ SC_MODULE(board) {
       cores[i].t_out_v(t_out_v_sigs[i]);
       cores[i].t_out_f(t_out_f_sigs[i]);
       cores[i].rdy(rdy_sigs[i]);
-      //cores[i].finished(finished_sigs[i]);
+      cores[i].memory_rdy(memory_rdy_sig);
+      cores[i].memory_addr(memory_addr_sig);
+      cores[i].memory_addr_v(memory_addr_v_sig);
+      cores[i].memory_addr_f(memory_addr_f_sig);
     }
   }
 };

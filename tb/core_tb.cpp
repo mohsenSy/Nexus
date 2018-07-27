@@ -2,6 +2,8 @@
 
 #include <task.h>
 #include <core.h>
+#include <memory.h>
+#include <types.h>
 
 class coreHelper {
 public:
@@ -13,10 +15,24 @@ public:
   sc_signal<bool> t_out_v_sig;
   sc_signal<bool> t_out_f_sig;
   sc_signal<bool> rdy_sig;
+  sc_signal<bool, SC_MANY_WRITERS> memory_rdy_sig;
+  sc_signal<mem_addr, SC_MANY_WRITERS> memory_addr_sig;
+  sc_signal<bool, SC_MANY_WRITERS> memory_addr_v_sig;
+  sc_signal<bool, SC_MANY_WRITERS> memory_addr_f_sig;
+
+  memory *m;
   core *c;
   coreHelper(sc_module_name name) {
-    c = new core(name);
     clock = 0;
+    m = new memory("memory_controller");
+
+    m->clk(clock);
+    m->rdy(memory_rdy_sig);
+    m->addr(memory_addr_sig);
+    m->addr_v(memory_addr_v_sig);
+    m->addr_f(memory_addr_f_sig);
+
+    c = new core(name);
     c->clk(clock);
 
     c->t_in(t_in_sig);
@@ -28,6 +44,10 @@ public:
     c->t_out_f(t_out_f_sig);
 
     c->rdy(rdy_sig);
+    c->memory_rdy(memory_rdy_sig);
+    c->memory_addr(memory_addr_sig);
+    c->memory_addr_v(memory_addr_v_sig);
+    c->memory_addr_f(memory_addr_f_sig);
   }
 
   void wait() {

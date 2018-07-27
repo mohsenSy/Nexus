@@ -2,6 +2,7 @@
 #include <utils.h>
 #include <mutex>
 
+sc_mutex memory_mutex;
 
 void core::handle_finished(void) {
   while(true) {
@@ -30,6 +31,23 @@ void core::handle_finished(void) {
   }
 }
 
+void core::fetch_input(mem_addr addr) {
+  // Wait until memory controller is ready
+  while(memory_rdy.read() != true) {
+    wait();
+  }
+  memory_mutex.lock();
+  // Send address to memory controller
+  memory_addr.write(addr);
+  memory_addr_v.write(true);
+  wait();
+  // Wait until address is read by memory controller
+  while(memory_addr_f.read() == false) {
+    wait();
+  }
+  memory_mutex.unlock();
+}
+
 void core::send_task(void) {
   while (true) {
     task t;
@@ -38,12 +56,9 @@ void core::send_task(void) {
     }
     int num_inputs = t.input_args;
     // fetch input args
-    PRINTL("fetching inputs for %d", t.id);
+    PRINTL("fetching inputs for %d, %d", t.id, num_inputs);
     for (int i = 0; i < num_inputs; i++) {
-      // Reading from memory is modeled by a wait
-      for (int j = 0; j < MEM_FETCH_TIME; j++) {
-        wait();
-      }
+      fetch_input(t.in_args[i]);
     }
     // Wait until the execution unit finishes current task
     while (rdy_sig == false) {

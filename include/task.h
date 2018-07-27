@@ -4,6 +4,7 @@
 #include <types.h>
 
 typedef struct task_descriptor {
+public:
   t_id id;
   int delay;
   int input_args, output_args;

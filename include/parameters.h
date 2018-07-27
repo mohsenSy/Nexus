@@ -3,6 +3,8 @@
 
 // Core parameters
 #define BUFFER_DEPTH 2 // Number of buffered tasks at the core level
+
+// Memory Controller parameters
 #define MEM_FETCH_TIME 10 // Number of cycles required to read from memory
 
 // Board parameters
