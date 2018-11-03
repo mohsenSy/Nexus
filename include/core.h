@@ -58,7 +58,6 @@ SC_MODULE(core) {
   SC_CTOR(core): taskFifo(BUFFER_DEPTH)   {
     rdy.initialize(true);
     t_out_v.initialize(false);
-    //finished.initialize(false);
     previous_task.id = 0;
 
     PRINTL("new core %s", name());

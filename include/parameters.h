@@ -11,4 +11,9 @@
 #define CORE_NUM 10 // Number of simulated cores in the System Board
 #define TASK_NUM 101 // Number of tasks buffered in system board for execution
 
+// Nexus 1 parameters
+#define NEXUS1_TASK_NUM 24
+#define NEXUS1_IN_BUFFER_DEPTH 4
+#define NEXUS1_READY_QUEUE_DEPTH 12
+
 #endif
