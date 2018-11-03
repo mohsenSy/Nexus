@@ -46,7 +46,7 @@ bool Table::add_entry(void* en, int id) {
       return true;
     }
   }
-  std::cout << "No entry added" << std::endl;
+  //std::cout << "No entry added" << std::endl;
   return false;
 }
 
@@ -58,6 +58,15 @@ bool Table::delete_entry(int id) {
     }
   }
   return false;
+}
+
+void* Table::get_entry(int id) {
+  for (int i = 0; i < count; i++) {
+    if(entries[i] != NULL && entries[i]->is_used() && entries[i]->get_id() == id) {
+      return entries[i]->get_data();
+    }
+  }
+  return NULL;
 }
 
 void Table::print_entries() {
@@ -97,12 +106,16 @@ void nexus1::receive() {
 
 void nexus1::load() {
   while(true) {
-    task t;
-    while (!in_buffer.nb_read(t)) {
+    task *t = new task;
+    while (!in_buffer.nb_read(*t)) {
       wait();
     }
-    PRINTL("Loading this task %d", t.id);
+    PRINTL("Loading this task %d", t->id);
+    while(!task_pool->add_entry((void *)t, t->id)) {
+      wait();
+    }
     wait();
+    task_pool->print_entries();
   }
 
 

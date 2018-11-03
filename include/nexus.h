@@ -56,9 +56,11 @@ class Table {
       delete entries;
     }
 
-    bool add_entry(void* en, int id);
+    bool add_entry(void*, int);
 
-    bool delete_entry(int id);
+    bool delete_entry(int);
+
+    void* get_entry(int);
 
     void print_entries();
 
@@ -78,7 +80,7 @@ SC_MODULE(nexus1) {
   sc_fifo<task> in_buffer; // Buffer for received tasks.
   sc_fifo<task> ready_queue; // Buffer for tasks ready for execution.
 
-  task task_pool[NEXUS1_TASK_NUM];
+  Table* task_pool;
 
   task previous_task;
 
@@ -90,6 +92,8 @@ SC_MODULE(nexus1) {
     rdy.initialize(true);
     t_out_v.initialize(false);
     previous_task.id = 0;
+
+    task_pool = new Table(NEXUS1_TASK_NUM);
 
     PRINTL("new nexus 1 %s", name());
     SC_CTHREAD(receive, clk.pos());
