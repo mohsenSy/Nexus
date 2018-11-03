@@ -112,13 +112,32 @@ void nexus1::load() {
     }
     PRINTL("Loading this task %d", t->id);
     while(!task_pool->add_entry((void *)t, t->id)) {
+      //PRINTL("Task %d waiting for task pool", t->id);
       wait();
     }
+    add_to_task_table(t);
     wait();
-    task_pool->print_entries();
+    task_table->print_entries();
   }
 
 
+}
+
+void nexus1::add_to_task_table(task* t) {
+  TaskTableEntry* tte = new TaskTableEntry;
+  tte->id = t->id;
+  tte->t = t;
+  tte->status = NEW;
+  tte->num_of_deps = calculate_deps(t);
+  while(!task_table->add_entry((void *)tte, tte->id)) {
+    //PRINTL("Task %d waiting for task table", tte->id);
+    wait();
+  }
+}
+
+int nexus1::calculate_deps(task* t) {
+  // Will be implemented later
+  return 0;
 }
 
 void nexus1::schedule() {

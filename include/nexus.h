@@ -15,6 +15,16 @@
 #include <parameters.h>
 #include <utils.h>
 
+enum TaskStatus { NEW };
+
+typedef struct task_table_entry {
+  int id;
+  task* t;
+  TaskStatus status;
+  int num_of_deps;
+
+}TaskTableEntry;
+
 class TableEntry {
   private:
     bool used; // true when the entry is used
@@ -41,7 +51,7 @@ class TableEntry {
 };
 
 class Table {
-  private:
+  protected:
     TableEntry** entries;
     int count;
   public:
@@ -66,6 +76,7 @@ class Table {
 
 };
 
+
 SC_MODULE(nexus1) {
 
   sc_in_clk clk;
@@ -81,12 +92,15 @@ SC_MODULE(nexus1) {
   sc_fifo<task> ready_queue; // Buffer for tasks ready for execution.
 
   Table* task_pool;
+  Table* task_table;
 
   task previous_task;
 
   void receive(); // Receive a new task and store it in receive buffer
   void load(); // Load a task from receive buffer to Task Pool and other tables
   void schedule(); // Find the next ready task for execution and send it to ready queue
+  void add_to_task_table(task*);
+  int calculate_deps(task*);
 
   SC_CTOR(nexus1): in_buffer(NEXUS1_IN_BUFFER_DEPTH), ready_queue(NEXUS1_READY_QUEUE_DEPTH) {
     rdy.initialize(true);
@@ -94,6 +108,7 @@ SC_MODULE(nexus1) {
     previous_task.id = 0;
 
     task_pool = new Table(NEXUS1_TASK_NUM);
+    task_table = new Table(NEXUS1_TASK_TABLE_SIZE);
 
     PRINTL("new nexus 1 %s", name());
     SC_CTHREAD(receive, clk.pos());
