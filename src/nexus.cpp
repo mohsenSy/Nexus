@@ -136,7 +136,7 @@ void nexus1::add_to_task_table(task* t) {
 }
 
 int nexus1::calculate_deps(task* t) {
-  // Will be implemented later
+  // Here we fill data in producers and consumers tables
   return 0;
 }
 

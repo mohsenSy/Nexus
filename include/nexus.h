@@ -25,6 +25,17 @@ typedef struct task_table_entry {
 
 }TaskTableEntry;
 
+typedef struct prod_table {
+  mem_addr addr;
+  mem_addr kick_of_list[NEXUS1_KICK_OFF_LIST_SIZE];
+}ProdTable;
+
+typedef struct cons_table {
+  mem_addr addr;
+  int num_of_deps;
+  mem_addr kick_of_list[NEXUS1_KICK_OFF_LIST_SIZE];
+}ConsTable;
+
 class TableEntry {
   private:
     bool used; // true when the entry is used
@@ -93,6 +104,8 @@ SC_MODULE(nexus1) {
 
   Table* task_pool;
   Table* task_table;
+  Table* producers_table;
+  Table* consumers_table;
 
   task previous_task;
 
@@ -109,6 +122,8 @@ SC_MODULE(nexus1) {
 
     task_pool = new Table(NEXUS1_TASK_NUM);
     task_table = new Table(NEXUS1_TASK_TABLE_SIZE);
+    producers_table = new Table(NEXUS1_PRODUCERS_TABLE_SIZE);
+    consumers_table = new Table(NEXUS1_CONSUMERS_TABLE_SIZE);
 
     PRINTL("new nexus 1 %s", name());
     SC_CTHREAD(receive, clk.pos());
