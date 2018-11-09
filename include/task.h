@@ -10,9 +10,12 @@ public:
   int input_args, output_args;
   mem_addr *in_args;
   mem_addr *out_args;
-
+  // This function must be removed
   void set_input_args(int n_args, ...);
+  // This function must be removed
   void set_output_args(int n_args, ...);
+  void set_input_arg(int, mem_addr);
+  void set_output_arg(int, mem_addr);
   mem_addr get_input_arg(int index);
   mem_addr get_output_arg(int index);
 

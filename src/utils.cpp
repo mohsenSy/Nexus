@@ -41,9 +41,10 @@ void printl(const char* file_name, const char* module_name, const char* fmt...){
 void read_tasks(std::string filename, std::vector<task> * tasks) {
   std::ifstream fin(filename.c_str(), std::ifstream::in);
   task *t = new task();
-
   while (fin>>*t){
-    t->set_input_args(0);
+    for (int i = 0; i < t->input_args; i++) {
+      t->set_input_arg(i, new mem_addr);
+    }
     tasks->push_back(*t);
     t = new task();
   }
