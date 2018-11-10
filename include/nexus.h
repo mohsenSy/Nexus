@@ -91,6 +91,8 @@ class ProducersTable : Table {
   public:
     ProducersTable(int c): Table(c) {}
     virtual prod_table* get_entry(mem_addr);
+    virtual void add_entry(prod_table*);
+    virtual void print_entries();
 };
 
 class ConsumersTable : public Table {
@@ -98,6 +100,7 @@ class ConsumersTable : public Table {
     ConsumersTable(int c): Table(c) {}
     virtual cons_table* get_entry(mem_addr);
     virtual void add_entry(cons_table*);
+    virtual void print_entries();
 };
 
 
@@ -117,8 +120,7 @@ SC_MODULE(nexus1) {
 
   Table* task_pool;
   Table* task_table;
-  Table* producers_table;
-  //Table* consumers_table;
+  ProducersTable* producers_table;
   ConsumersTable* consumers_table;
 
   task previous_task;
@@ -136,8 +138,7 @@ SC_MODULE(nexus1) {
 
     task_pool = new Table(NEXUS1_TASK_NUM);
     task_table = new Table(NEXUS1_TASK_TABLE_SIZE);
-    producers_table = new Table(NEXUS1_PRODUCERS_TABLE_SIZE);
-    //consumers_table = new Table(NEXUS1_CONSUMERS_TABLE_SIZE);
+    producers_table = new ProducersTable(NEXUS1_PRODUCERS_TABLE_SIZE);
     consumers_table = new ConsumersTable(NEXUS1_CONSUMERS_TABLE_SIZE);
 
     PRINTL("new nexus 1 %s", name());

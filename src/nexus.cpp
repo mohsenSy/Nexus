@@ -28,10 +28,10 @@ void TableEntry::set_data(void* d) {
 
 bool Table::add_entry(void* en, int id) {
   // Adds en to the array of entries
-  std::cout << "In base class" << std::endl;
+  //std::cout << "In base class" << std::endl;
   // Find a valid entry
   for (int i = 0; i < count; i++) {
-    std::cout << i << std::endl;
+    //std::cout << i << std::endl;
     if (entries[i] == NULL) {
       // Add a new Entry
       entries[i] = new TableEntry(en, id);
@@ -116,6 +116,44 @@ void ConsumersTable::add_entry(cons_table* en) {
   Table::add_entry((void *)en, 0);
 }
 
+void ProducersTable::add_entry(prod_table* en) {
+  std::cout << "Add entry in child class" << std::endl;
+  for (int i = 0; i < this->count; i++) {
+    if (this->entries[i] != NULL) {
+      prod_table* enn = (prod_table *)this->entries[i]->get_data();
+      if (enn != NULL) {
+        if (enn->addr == en->addr) {
+          std::cout << "Address already exists" << std::endl;
+          return;
+        }
+      }
+    }
+  }
+  Table::add_entry((void *)en, 0);
+}
+
+void ProducersTable::print_entries() {
+  for (int i = 0; i < this->count; i++) {
+    if (this->entries[i] != NULL) {
+      prod_table* en = (prod_table *)(this->entries[i]->get_data());
+      if ( en != NULL) {
+        std::cout << en->addr << std::endl;
+      }
+    }
+  }
+}
+
+void ConsumersTable::print_entries() {
+  for (int i = 0; i < this->count; i++) {
+    if (this->entries[i] != NULL) {
+      cons_table* en = (cons_table *)(this->entries[i]->get_data());
+      if ( en != NULL) {
+        std::cout << en->addr << std::endl;
+      }
+    }
+  }
+}
+
 void nexus1::receive() {
   rdy.write(true);
   t_in_f.write(false);
@@ -177,13 +215,23 @@ void nexus1::add_to_task_table(task* t) {
 int nexus1::calculate_deps(task* t) {
   // Here we fill data in producers and consumers tables
 
-  for (int i = 0; i < t->input_args; i++) {
+  /*for (int i = 0; i < t->input_args; i++) {
     // Process each input arg
     cons_table* p = new cons_table;
     p->addr = t->get_input_arg(i);
     consumers_table->add_entry(p);
+    wait();
+  }*/
+
+  for (int i = 0; i < t->output_args; i++) {
+    // Process each output arg
+    prod_table* p = new prod_table;
+    p->addr = t->get_output_arg(i);
+    producers_table->add_entry(p);
+    wait();
   }
-  //consumers_table->print_entries();
+
+  producers_table->print_entries();
   return 0;
 }
 
