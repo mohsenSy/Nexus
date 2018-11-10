@@ -100,7 +100,7 @@ cons_table* ConsumersTable::get_entry(mem_addr addr) {
   return NULL;
 }
 
-void ConsumersTable::add_entry(cons_table* en) {
+bool ConsumersTable::add_entry(cons_table* en) {
   std::cout << "Add entry in child class" << std::endl;
   for (int i = 0; i < this->count; i++) {
     if (this->entries[i] != NULL) {
@@ -108,15 +108,15 @@ void ConsumersTable::add_entry(cons_table* en) {
       if (enn != NULL) {
         if (enn->addr == en->addr) {
           std::cout << "Address already exists" << std::endl;
-          return;
+          return true;
         }
       }
     }
   }
-  Table::add_entry((void *)en, 0);
+  return Table::add_entry((void *)en, 0);
 }
 
-void ProducersTable::add_entry(prod_table* en) {
+bool ProducersTable::add_entry(prod_table* en) {
   std::cout << "Add entry in child class" << std::endl;
   for (int i = 0; i < this->count; i++) {
     if (this->entries[i] != NULL) {
@@ -124,12 +124,12 @@ void ProducersTable::add_entry(prod_table* en) {
       if (enn != NULL) {
         if (enn->addr == en->addr) {
           std::cout << "Address already exists" << std::endl;
-          return;
+          return true;
         }
       }
     }
   }
-  Table::add_entry((void *)en, 0);
+  return Table::add_entry((void *)en, 0);
 }
 
 void ProducersTable::print_entries() {
@@ -215,23 +215,23 @@ void nexus1::add_to_task_table(task* t) {
 int nexus1::calculate_deps(task* t) {
   // Here we fill data in producers and consumers tables
 
-  /*for (int i = 0; i < t->input_args; i++) {
+  for (int i = 0; i < t->input_args; i++) {
     // Process each input arg
     cons_table* p = new cons_table;
     p->addr = t->get_input_arg(i);
-    consumers_table->add_entry(p);
-    wait();
-  }*/
+    while(!consumers_table->add_entry(p)) {
+      wait();
+    }
+  }
 
   for (int i = 0; i < t->output_args; i++) {
     // Process each output arg
     prod_table* p = new prod_table;
     p->addr = t->get_output_arg(i);
-    producers_table->add_entry(p);
-    wait();
+    while (!producers_table->add_entry(p)) {
+      wait();
+    }
   }
-
-  producers_table->print_entries();
   return 0;
 }
 

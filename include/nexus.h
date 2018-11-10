@@ -91,7 +91,7 @@ class ProducersTable : Table {
   public:
     ProducersTable(int c): Table(c) {}
     virtual prod_table* get_entry(mem_addr);
-    virtual void add_entry(prod_table*);
+    virtual bool add_entry(prod_table*);
     virtual void print_entries();
 };
 
@@ -99,7 +99,7 @@ class ConsumersTable : public Table {
   public:
     ConsumersTable(int c): Table(c) {}
     virtual cons_table* get_entry(mem_addr);
-    virtual void add_entry(cons_table*);
+    virtual bool add_entry(cons_table*);
     virtual void print_entries();
 };
 
