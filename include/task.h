@@ -8,8 +8,8 @@ public:
   t_id id;
   int delay;
   int input_args, output_args;
-  mem_addr *in_args;
-  mem_addr *out_args;
+  mem_addr* in_args;
+  mem_addr* out_args;
   // This function must be removed
   void set_input_args(int n_args, ...);
   // This function must be removed
@@ -23,7 +23,7 @@ public:
 
   friend std::istream& operator >>(std::istream & in, task_descriptor & td) {
     char c;
-    in >> td.id >> c >> td.delay >> c >> td.input_args >> c >> td.output_args;;
+    in >> td.id >> c >> td.delay >> c >> td.input_args >> c >> td.output_args;
     return in;
   }
 }task;

@@ -42,10 +42,18 @@ void read_tasks(std::string filename, std::vector<task> * tasks) {
   std::ifstream fin(filename.c_str(), std::ifstream::in);
   task *t = new task();
   while (fin>>*t){
+    int addr;
+    char c;
     for (int i = 0; i < t->input_args; i++) {
-      t->set_input_arg(i, new mem_addr);
+      fin >> c >> addr;
+      t->set_input_arg(i, (mem_addr)addr);
+    }
+    for (int i = 0; i < t->output_args; i++) {
+      fin >> c >> addr;
+      t->set_output_arg(i, (mem_addr)addr);
     }
     tasks->push_back(*t);
+    std::cout << "Read task with id " << t->id << std::endl;
     t = new task();
   }
 }

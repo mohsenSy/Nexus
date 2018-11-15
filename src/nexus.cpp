@@ -92,16 +92,19 @@ prod_table* ProducersTable::get_entry(mem_addr addr) {
 cons_table* ConsumersTable::get_entry(mem_addr addr) {
   std::cout << "In child class" << std::endl;
   for (int i = 0; i < this->count; i++) {
-    cons_table* en = (cons_table *)this->entries[i]->get_data();
-    if (en->addr == addr) {
-      return en;
+    TableEntry* te = (TableEntry *)this->entries[i];
+    if (te != NULL) {
+      cons_table* en = (cons_table *)this->entries[i]->get_data();
+      if (en->addr == addr) {
+        return en;
+      }
     }
   }
   return NULL;
 }
 
 bool ConsumersTable::add_entry(cons_table* en) {
-  std::cout << "Add entry in child class" << std::endl;
+  //std::cout << "Add entry in child class" << std::endl;
   for (int i = 0; i < this->count; i++) {
     if (this->entries[i] != NULL) {
       cons_table* enn = (cons_table *)this->entries[i]->get_data();
@@ -214,13 +217,17 @@ void nexus1::add_to_task_table(task* t) {
 
 int nexus1::calculate_deps(task* t) {
   // Here we fill data in producers and consumers tables
+  int deps = 0;
 
   for (int i = 0; i < t->input_args; i++) {
     // Process each input arg
-    cons_table* p = new cons_table;
-    p->addr = t->get_input_arg(i);
-    while(!consumers_table->add_entry(p)) {
-      wait();
+    cons_table* p = (cons_table *)consumers_table->get_entry(t->get_input_arg(i));
+    if (p == NULL) {
+      p = new cons_table;
+      p->addr = t->get_input_arg(i);
+      while(!consumers_table->add_entry(p)) {
+        wait();
+      }
     }
   }
 
