@@ -27,12 +27,14 @@ typedef struct task_table_entry {
 
 typedef struct prod_table {
   mem_addr addr;
+  int index;
   task kick_of_list[NEXUS1_KICK_OFF_LIST_SIZE];
 }ProdTable;
 
 typedef struct cons_table {
   mem_addr addr;
   int num_of_deps;
+  int index;
   task kick_of_list[NEXUS1_KICK_OFF_LIST_SIZE];
 }ConsTable;
 
@@ -93,6 +95,7 @@ class ProducersTable : Table {
     virtual prod_table* get_entry(mem_addr);
     virtual bool add_entry(prod_table*);
     virtual void print_entries();
+    void add_to_kick_off_list(mem_addr, task);
 };
 
 class ConsumersTable : public Table {
@@ -101,6 +104,8 @@ class ConsumersTable : public Table {
     virtual cons_table* get_entry(mem_addr);
     virtual bool add_entry(cons_table*);
     virtual void print_entries();
+    void increment_deps(mem_addr);
+    void add_to_kick_off_list(mem_addr, task);
 };
 
 

@@ -81,9 +81,12 @@ void Table::print_entries() {
 
 prod_table* ProducersTable::get_entry(mem_addr addr) {
   for (int i = 0; i < this->count; i++) {
-    prod_table* en = (prod_table *)this->entries[i]->get_data();
-    if (en->addr == addr) {
-      return en;
+    TableEntry* te = (TableEntry *)this->entries[i];
+    if (te != NULL) {
+      prod_table* en = (prod_table *)this->entries[i]->get_data();
+      if (en->addr == addr) {
+        return en;
+      }
     }
   }
   return NULL;
@@ -157,6 +160,31 @@ void ConsumersTable::print_entries() {
   }
 }
 
+void ConsumersTable::increment_deps(mem_addr addr) {
+  cons_table* e = this->get_entry(addr);
+  if (e) {
+    e->num_of_deps++;
+  }
+}
+
+void ConsumersTable::add_to_kick_off_list(mem_addr addr, task t) {
+  cons_table* e = this->get_entry(addr);
+  if (e) {
+    if (e->index < NEXUS1_KICK_OFF_LIST_SIZE) {
+      e->kick_of_list[e->index++] = t;
+    }
+  }
+}
+
+void ProducersTable::add_to_kick_off_list(mem_addr addr, task t) {
+  prod_table* e = this->get_entry(addr);
+  if (e) {
+    if (e->index < NEXUS1_KICK_OFF_LIST_SIZE) {
+      e->kick_of_list[e->index++] = t;
+    }
+  }
+}
+
 void nexus1::receive() {
   rdy.write(true);
   t_in_f.write(false);
@@ -224,19 +252,37 @@ int nexus1::calculate_deps(task* t) {
     cons_table* p = (cons_table *)consumers_table->get_entry(t->get_input_arg(i));
     if (p == NULL) {
       p = new cons_table;
+      p->num_of_deps = 0;
+      p->index = 0;
       p->addr = t->get_input_arg(i);
       while(!consumers_table->add_entry(p)) {
         wait();
       }
     }
+    else {
+      consumers_table->increment_deps(p->addr);
+    }
   }
 
   for (int i = 0; i < t->output_args; i++) {
     // Process each output arg
-    prod_table* p = new prod_table;
-    p->addr = t->get_output_arg(i);
-    while (!producers_table->add_entry(p)) {
-      wait();
+    cons_table* p = (cons_table *)consumers_table->get_entry(t->get_output_arg(i));
+    if (p != NULL) {
+      consumers_table->add_to_kick_off_list(p->addr, *t);
+      PRINTL("Added to kick of list of addr %d, task %d in consumers", p->addr, t->id);
+    }
+    prod_table* pr = (prod_table *)producers_table->get_entry(t->get_output_arg(i));
+    if (pr == NULL) {
+      pr = new prod_table;
+      pr->index = 0;
+      pr->addr = t->get_output_arg(i);
+      while (!producers_table->add_entry(pr)) {
+        wait();
+      }
+    }
+    else {
+      producers_table->add_to_kick_off_list(pr->addr, *t);
+      PRINTL("Added to kick of list of addr %d, task %d in producers", pr->addr, t->id);
     }
   }
   return 0;
