@@ -53,7 +53,7 @@ void read_tasks(std::string filename, std::vector<task> * tasks) {
       t->set_output_arg(i, (mem_addr)addr);
     }
     tasks->push_back(*t);
-    std::cout << "Read task with id " << t->id << std::endl;
+    //std::cout << "Read task with id " << t->id << std::endl;
     t = new task();
   }
 }

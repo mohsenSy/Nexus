@@ -93,7 +93,7 @@ prod_table* ProducersTable::get_entry(mem_addr addr) {
 }
 
 cons_table* ConsumersTable::get_entry(mem_addr addr) {
-  std::cout << "In child class" << std::endl;
+  //std::cout << "In child class" << std::endl;
   for (int i = 0; i < this->count; i++) {
     TableEntry* te = (TableEntry *)this->entries[i];
     if (te != NULL) {
@@ -113,7 +113,7 @@ bool ConsumersTable::add_entry(cons_table* en) {
       cons_table* enn = (cons_table *)this->entries[i]->get_data();
       if (enn != NULL) {
         if (enn->addr == en->addr) {
-          std::cout << "Address already exists" << std::endl;
+          //std::cout << "Address already exists" << std::endl;
           return true;
         }
       }
@@ -123,13 +123,13 @@ bool ConsumersTable::add_entry(cons_table* en) {
 }
 
 bool ProducersTable::add_entry(prod_table* en) {
-  std::cout << "Add entry in child class" << std::endl;
+  //std::cout << "Add entry in child class" << std::endl;
   for (int i = 0; i < this->count; i++) {
     if (this->entries[i] != NULL) {
       prod_table* enn = (prod_table *)this->entries[i]->get_data();
       if (enn != NULL) {
         if (enn->addr == en->addr) {
-          std::cout << "Address already exists" << std::endl;
+          //std::cout << "Address already exists" << std::endl;
           return true;
         }
       }
@@ -225,7 +225,7 @@ void nexus1::load() {
     }
     add_to_task_table(t);
     wait();
-    task_table->print_entries();
+    //task_table->print_entries();
   }
 
 
@@ -255,12 +255,22 @@ int nexus1::calculate_deps(task* t) {
       p->num_of_deps = 0;
       p->index = 0;
       p->addr = t->get_input_arg(i);
+      PRINTL("Added to kick of list of addr %d, task %d in consumers", p->addr, t->id);
       while(!consumers_table->add_entry(p)) {
         wait();
       }
     }
     else {
-      consumers_table->increment_deps(p->addr);
+      if (p->index != 0) {
+        // There are tasks waiting to write to this memory location
+        // Add the task to the kick off list
+        consumers_table->add_to_kick_off_list(p->addr, *t);
+      }
+      else {
+        // Another task wants to read from this memory location
+        consumers_table->increment_deps(p->addr);
+      }
+      PRINTL("Added to kick of list of addr %d, task %d in consumers", p->addr, t->id);
     }
   }
 
@@ -276,6 +286,7 @@ int nexus1::calculate_deps(task* t) {
       pr = new prod_table;
       pr->index = 0;
       pr->addr = t->get_output_arg(i);
+      PRINTL("Added to kick of list of addr %d, task %d in producers", pr->addr, t->id);
       while (!producers_table->add_entry(pr)) {
         wait();
       }
