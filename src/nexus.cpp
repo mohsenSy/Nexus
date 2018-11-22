@@ -237,6 +237,7 @@ void nexus1::add_to_task_table(task* t) {
   tte->t = t;
   tte->status = NEW;
   tte->num_of_deps = calculate_deps(t);
+  PRINTL("Task %d has %d deps count", t->id, tte->num_of_deps);
   while(!task_table->add_entry((void *)tte, tte->id)) {
     //PRINTL("Task %d waiting for task table", tte->id);
     wait();
@@ -247,38 +248,12 @@ int nexus1::calculate_deps(task* t) {
   // Here we fill data in producers and consumers tables
   int deps = 0;
 
-  for (int i = 0; i < t->input_args; i++) {
-    // Process each input arg
-    cons_table* p = (cons_table *)consumers_table->get_entry(t->get_input_arg(i));
-    if (p == NULL) {
-      p = new cons_table;
-      p->num_of_deps = 0;
-      p->index = 0;
-      p->addr = t->get_input_arg(i);
-      PRINTL("Added to kick of list of addr %d, task %d in consumers", p->addr, t->id);
-      while(!consumers_table->add_entry(p)) {
-        wait();
-      }
-    }
-    else {
-      if (p->index != 0) {
-        // There are tasks waiting to write to this memory location
-        // Add the task to the kick off list
-        consumers_table->add_to_kick_off_list(p->addr, *t);
-      }
-      else {
-        // Another task wants to read from this memory location
-        consumers_table->increment_deps(p->addr);
-      }
-      PRINTL("Added to kick of list of addr %d, task %d in consumers", p->addr, t->id);
-    }
-  }
-
   for (int i = 0; i < t->output_args; i++) {
     // Process each output arg
     cons_table* p = (cons_table *)consumers_table->get_entry(t->get_output_arg(i));
     if (p != NULL) {
       consumers_table->add_to_kick_off_list(p->addr, *t);
+      deps += 1;
       PRINTL("Added to kick of list of addr %d, task %d in consumers", p->addr, t->id);
     }
     prod_table* pr = (prod_table *)producers_table->get_entry(t->get_output_arg(i));
@@ -293,10 +268,46 @@ int nexus1::calculate_deps(task* t) {
     }
     else {
       producers_table->add_to_kick_off_list(pr->addr, *t);
+      deps += 1;
       PRINTL("Added to kick of list of addr %d, task %d in producers", pr->addr, t->id);
     }
   }
-  return 0;
+
+  for (int i = 0; i < t->input_args; i++) {
+    // Process each input arg
+    prod_table* pr = (prod_table *)producers_table->get_entry(t->get_input_arg(i));
+    if (pr != NULL) {
+      producers_table->add_to_kick_off_list(pr->addr, *t);
+      deps += 1;
+      PRINTL("Added to kick of list of addr %d, task %d in producers", pr->addr, t->id);
+    }
+    cons_table* p = (cons_table *)consumers_table->get_entry(t->get_input_arg(i));
+    if (p == NULL) {
+      p = new cons_table;
+      p->num_of_deps = 1;
+      p->index = 0;
+      p->addr = t->get_input_arg(i);
+      PRINTL("Added to kick of list of addr %d, task %d in consumers", p->addr, t->id);
+      while(!consumers_table->add_entry(p)) {
+        wait();
+      }
+    }
+    else {
+      if (p->index != 0) {
+        // There are tasks waiting to write to this memory location
+        // Add the task to the kick off list
+        consumers_table->add_to_kick_off_list(p->addr, *t);
+        deps += 1;
+      }
+      else {
+        // Another task wants to read from this memory location
+        consumers_table->increment_deps(p->addr);
+      }
+      PRINTL("Added to kick of list of addr %d, task %d in consumers", p->addr, t->id);
+    }
+  }
+
+  return deps;
 }
 
 void nexus1::schedule() {
