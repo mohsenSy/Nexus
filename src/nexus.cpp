@@ -254,14 +254,14 @@ int nexus1::calculate_deps(task* t) {
     if (p != NULL) {
       consumers_table->add_to_kick_off_list(p->addr, *t);
       deps += 1;
-      PRINTL("Added to kick of list of addr %d, task %d in consumers", p->addr, t->id);
+      PRINTL("Added to kick off list of addr %d, task %d in consumers", p->addr, t->id);
     }
     prod_table* pr = (prod_table *)producers_table->get_entry(t->get_output_arg(i));
     if (pr == NULL) {
       pr = new prod_table;
       pr->index = 0;
       pr->addr = t->get_output_arg(i);
-      PRINTL("Added to kick of list of addr %d, task %d in producers", pr->addr, t->id);
+      PRINTL("Added new addr %d to task %d in producers", pr->addr, t->id);
       while (!producers_table->add_entry(pr)) {
         wait();
       }
@@ -269,7 +269,7 @@ int nexus1::calculate_deps(task* t) {
     else {
       producers_table->add_to_kick_off_list(pr->addr, *t);
       deps += 1;
-      PRINTL("Added to kick of list of addr %d, task %d in producers", pr->addr, t->id);
+      PRINTL("Added to kick off list of addr %d, task %d in producers", pr->addr, t->id);
     }
   }
 
@@ -279,7 +279,7 @@ int nexus1::calculate_deps(task* t) {
     if (pr != NULL) {
       producers_table->add_to_kick_off_list(pr->addr, *t);
       deps += 1;
-      PRINTL("Added to kick of list of addr %d, task %d in producers", pr->addr, t->id);
+      PRINTL("Added to kick off list of addr %d, task %d in producers", pr->addr, t->id);
     }
     cons_table* p = (cons_table *)consumers_table->get_entry(t->get_input_arg(i));
     if (p == NULL) {
@@ -287,7 +287,7 @@ int nexus1::calculate_deps(task* t) {
       p->num_of_deps = 1;
       p->index = 0;
       p->addr = t->get_input_arg(i);
-      PRINTL("Added to kick of list of addr %d, task %d in consumers", p->addr, t->id);
+      PRINTL("Added new addr %d to task %d in consumers", p->addr, t->id);
       while(!consumers_table->add_entry(p)) {
         wait();
       }
@@ -298,12 +298,13 @@ int nexus1::calculate_deps(task* t) {
         // Add the task to the kick off list
         consumers_table->add_to_kick_off_list(p->addr, *t);
         deps += 1;
+        PRINTL("Added to kick of list of addr %d, task %d in consumers", p->addr, t->id);
       }
       else {
         // Another task wants to read from this memory location
         consumers_table->increment_deps(p->addr);
+        PRINTL("Incremented number of deps for addr %d in task %d", p->addr, t->id);
       }
-      PRINTL("Added to kick of list of addr %d, task %d in consumers", p->addr, t->id);
     }
   }
 
