@@ -71,6 +71,18 @@ void* Table::get_entry(int id) {
   return NULL;
 }
 
+TaskTableEntry* Table::get_ready_task() {
+  for (int i = 0; i < count; i++) {
+    if(entries[i] != NULL && entries[i]->is_used()) {
+      TaskTableEntry* t = (TaskTableEntry *)entries[i]->get_data();
+      if (t->status == NEW && t->num_of_deps == 0) {
+        return t;
+      }
+    }
+  }
+  return NULL;
+}
+
 void Table::print_entries() {
   for (int i = 0; i < count; i++) {
     if(entries[i] != NULL && entries[i]->is_used()) {
@@ -312,5 +324,34 @@ int nexus1::calculate_deps(task* t) {
 }
 
 void nexus1::schedule() {
+  while (true) {
+    TaskTableEntry* tte = task_table->get_ready_task();
+    if ( tte != NULL) {
+      PRINTL("Can send this task %d to execution", tte->t->id);
+      send_task(tte);
+    }
+    wait();
+  }
+}
 
+void nexus1::send_task(TaskTableEntry *t) {
+    // Make sure t_out_f is true
+    while (t_out_f.read() == false) {
+      wait();
+    }
+    t_out.write(*t->t);
+    t_out_v.write(true);
+    wait();
+    while (t_out_f.read() == false) {
+      PRINTL("Waiting","");
+      wait();
+    }
+    /*do {
+      //PRINTL("Wait", "");
+      std::cout << t_out_f.read();
+      wait();
+    } while(t_out_f.read() == false);*/
+    t->status = SENT;
+    //PRINTL("Sent task %d", t->t->id);
+    t_out_v.write(false);
 }

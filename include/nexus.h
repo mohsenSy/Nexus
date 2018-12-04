@@ -15,7 +15,7 @@
 #include <parameters.h>
 #include <utils.h>
 
-enum TaskStatus { NEW };
+enum TaskStatus { NEW, SENT };
 
 typedef struct task_table_entry {
   int id;
@@ -85,6 +85,8 @@ class Table {
 
     void* get_entry(int);
 
+    TaskTableEntry* get_ready_task();
+
     void print_entries();
 
 };
@@ -135,6 +137,7 @@ SC_MODULE(nexus1) {
   void schedule(); // Find the next ready task for execution and send it to ready queue
   void add_to_task_table(task*);
   int calculate_deps(task*);
+  void send_task(TaskTableEntry *t);
 
   SC_CTOR(nexus1): in_buffer(NEXUS1_IN_BUFFER_DEPTH), ready_queue(NEXUS1_READY_QUEUE_DEPTH) {
     rdy.initialize(true);

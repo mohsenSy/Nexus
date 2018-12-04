@@ -63,14 +63,20 @@ public:
   }
 
   void run(const std::vector<task> tasks) {
-    t_out_f_sig = true;
+    t_out_f_sig = false;
     for(std::vector<task>::const_iterator iter = tasks.begin(); iter != tasks.end(); ++iter) {
       //std::cout<<iter->id<< std::endl;
       send_task(*iter);
     }
     //std::cout << "Sent all tasks" << std::endl;
     int i = 0;
+    t_out_f_sig = true;
     while (i++ != 1000) {
+      if (t_out_v_sig == true) {
+        task t = t_out_sig;
+        std::cout << "Got new task " << t.id << std::endl;
+        wait();
+      }
       wait();
     }
     /*while (rdy_sig != true) {
