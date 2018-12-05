@@ -120,6 +120,9 @@ SC_MODULE(nexus1) {
   sc_out<task> t_out; // Task output
   sc_out<bool> t_out_v; // Is task output valid?
   sc_in<bool> t_out_f; // Finished reading output task?
+  sc_in<task> t_f_in; // Finished task
+  sc_out<bool> t_f_in_f; // Finished reading finished task?
+  sc_in<bool> t_f_in_v; // Finished task input valid?
   sc_out<bool> rdy; // Check if nexus is ready or not to receive tasks?
 
   sc_fifo<task> in_buffer; // Buffer for received tasks.
@@ -131,6 +134,7 @@ SC_MODULE(nexus1) {
   ConsumersTable* consumers_table;
 
   task previous_task;
+  task previous_f_task;
 
   void receive(); // Receive a new task and store it in receive buffer
   void load(); // Load a task from receive buffer to Task Pool and other tables
@@ -139,10 +143,14 @@ SC_MODULE(nexus1) {
   int calculate_deps(task*);
   void send_task(TaskTableEntry *t);
 
+  void read_finished(); // Read finished tasks and delete them.
+  void delete_task(task&);
+
   SC_CTOR(nexus1): in_buffer(NEXUS1_IN_BUFFER_DEPTH), ready_queue(NEXUS1_READY_QUEUE_DEPTH) {
     rdy.initialize(true);
     t_out_v.initialize(false);
     previous_task.id = 0;
+    previous_f_task.id = 0;
 
     task_pool = new Table(NEXUS1_TASK_NUM);
     task_table = new Table(NEXUS1_TASK_TABLE_SIZE);
@@ -153,6 +161,7 @@ SC_MODULE(nexus1) {
     SC_CTHREAD(receive, clk.pos());
     SC_CTHREAD(load, clk.pos());
     SC_CTHREAD(schedule, clk.pos());
+    SC_CTHREAD(read_finished, clk.pos());
 
   }
 };

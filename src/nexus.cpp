@@ -337,6 +337,7 @@ void nexus1::schedule() {
 void nexus1::send_task(TaskTableEntry *t) {
     // Make sure t_out_f is true
     while (t_out_f.read() == false) {
+      PRINTL("Waiting for other unit to finish reading", "");
       wait();
     }
     t_out.write(*t->t);
@@ -352,6 +353,31 @@ void nexus1::send_task(TaskTableEntry *t) {
       wait();
     } while(t_out_f.read() == false);*/
     t->status = SENT;
-    //PRINTL("Sent task %d", t->t->id);
+    PRINTL("Sent task %d", t->t->id);
     t_out_v.write(false);
+}
+
+void nexus1::read_finished() {
+  t_f_in_f.write(false);
+
+  while (true) {
+    t_f_in_f.write(false);
+    if (t_f_in_v.read() == true) {
+      task t = t_f_in.read();
+      t_f_in_f.write(false);
+      if (t != previous_f_task) {
+        previous_f_task = t;
+        PRINTL("Finished task %d", t.id);
+        t_f_in_f.write(true);
+        wait();
+        // Now delete task from all tables
+        delete_task(t);
+      }
+    }
+    wait();
+  }
+}
+
+void nexus1::delete_task(task& t) {
+  PRINTL("Deleteing task %d from all tables", t.id);
 }
