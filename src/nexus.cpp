@@ -56,6 +56,7 @@ bool Table::delete_entry(int id) {
   for(int i = 0; i < count; i++) {
     if(entries[i] != NULL && entries[i]->is_used() && entries[i]->get_id() == id) {
       delete entries[i];
+      entries[i] = NULL;
       return true;
     }
   }
@@ -132,6 +133,27 @@ bool ConsumersTable::add_entry(cons_table* en) {
     }
   }
   return Table::add_entry((void *)en, 0);
+}
+
+bool ConsumersTable::delete_entry(cons_table* en) {
+  for (int i = 0; i < this->count; i++) {
+    if (this->entries[i] != NULL) {
+      cons_table* enn = (cons_table *)this->entries[i]->get_data();
+      if (enn != NULL) {
+        if (enn->addr == en->addr) {
+          //std::cout << "Address already exists" << std::endl;
+          return true;
+        }
+      }
+    }
+  }
+  return Table::add_entry((void *)en, 0);
+}
+
+ConsumersTable::delete_addr(mem_addr m) {
+  for (int i = 0; i < this.count; i++) {
+    
+  }
 }
 
 bool ProducersTable::add_entry(prod_table* en) {
@@ -380,4 +402,10 @@ void nexus1::read_finished() {
 
 void nexus1::delete_task(task& t) {
   PRINTL("Deleteing task %d from all tables", t.id);
+  task_table->delete_entry(t.id);
+  task_pool->delete_entry(t.id);
+  for (int i = 0; i < t.input_args; i++) {
+    consumers_table->delete_addr(t.get_input_arg(i));
+  }
+  //producers_table->print_entries();
 }

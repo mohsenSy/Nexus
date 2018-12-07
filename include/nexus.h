@@ -76,7 +76,7 @@ class Table {
 
     ~Table() {
       std::cout << "Deleted entries" << std::endl;
-      delete entries;
+      delete [] entries;
     }
 
     bool add_entry(void*, int);
@@ -96,6 +96,7 @@ class ProducersTable : Table {
     ProducersTable(int c): Table(c) {}
     virtual prod_table* get_entry(mem_addr);
     virtual bool add_entry(prod_table*);
+    //bool delete_addr(mem_addr);
     virtual void print_entries();
     void add_to_kick_off_list(mem_addr, task);
 };
@@ -105,6 +106,8 @@ class ConsumersTable : public Table {
     ConsumersTable(int c): Table(c) {}
     virtual cons_table* get_entry(mem_addr);
     virtual bool add_entry(cons_table*);
+    virtual bool delete_entry(cons_table*);
+    bool delete_addr(mem_addr);
     virtual void print_entries();
     void increment_deps(mem_addr);
     void add_to_kick_off_list(mem_addr, task);
