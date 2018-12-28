@@ -98,7 +98,7 @@ class ProducersTable : Table {
     bool add_entry(prod_table_entry*);
     //bool delete_addr(mem_addr);
     void print_entries();
-    void add_to_kick_off_list(mem_addr, task);
+    bool add_to_kick_off_list(mem_addr, task);
 };
 
 class ConsumersTable : public Table {
@@ -106,11 +106,11 @@ class ConsumersTable : public Table {
     ConsumersTable(int c): Table(c) {}
     cons_table_entry* get_entry(mem_addr);
     bool add_entry(cons_table_entry*);
-    bool delete_entry(cons_table_entry*);
+    //bool delete_entry(cons_table_entry*);
     bool delete_addr(mem_addr);
     void print_entries();
     void increment_deps(mem_addr);
-    void add_to_kick_off_list(mem_addr, task);
+    bool add_to_kick_off_list(mem_addr, task);
 };
 
 
