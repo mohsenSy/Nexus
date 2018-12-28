@@ -67,15 +67,15 @@ int nexus1::calculate_deps(task* t) {
 
   for (int i = 0; i < t->output_args; i++) {
     // Process each output arg
-    cons_table* p = (cons_table *)consumers_table->get_entry(t->get_output_arg(i));
+    cons_table_entry* p = (cons_table_entry *)consumers_table->get_entry(t->get_output_arg(i));
     if (p != NULL) {
       consumers_table->add_to_kick_off_list(p->addr, *t);
       deps += 1;
       PRINTL("Added to kick off list of addr %d, task %d in consumers", p->addr, t->id);
     }
-    prod_table* pr = (prod_table *)producers_table->get_entry(t->get_output_arg(i));
+    prod_table_entry* pr = (prod_table_entry *)producers_table->get_entry(t->get_output_arg(i));
     if (pr == NULL) {
-      pr = new prod_table;
+      pr = new prod_table_entry;
       pr->index = 0;
       pr->addr = t->get_output_arg(i);
       PRINTL("Added new addr %d to task %d in producers", pr->addr, t->id);
@@ -92,15 +92,15 @@ int nexus1::calculate_deps(task* t) {
 
   for (int i = 0; i < t->input_args; i++) {
     // Process each input arg
-    prod_table* pr = (prod_table *)producers_table->get_entry(t->get_input_arg(i));
+    prod_table_entry* pr = (prod_table_entry *)producers_table->get_entry(t->get_input_arg(i));
     if (pr != NULL) {
       producers_table->add_to_kick_off_list(pr->addr, *t);
       deps += 1;
       PRINTL("Added to kick off list of addr %d, task %d in producers", pr->addr, t->id);
     }
-    cons_table* p = (cons_table *)consumers_table->get_entry(t->get_input_arg(i));
+    cons_table_entry* p = (cons_table_entry *)consumers_table->get_entry(t->get_input_arg(i));
     if (p == NULL) {
-      p = new cons_table;
+      p = new cons_table_entry;
       p->num_of_deps = 1;
       p->index = 0;
       p->addr = t->get_input_arg(i);

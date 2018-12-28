@@ -15,7 +15,7 @@
 #include <parameters.h>
 #include <utils.h>
 
-enum TaskStatus { NEW, SENT };
+enum TaskStatus { NEW, SENT, FINISHED };
 
 typedef struct task_table_entry {
   int id;
@@ -25,18 +25,18 @@ typedef struct task_table_entry {
 
 }TaskTableEntry;
 
-typedef struct prod_table {
+typedef struct prod_table_entry {
   mem_addr addr;
   int index;
   task kick_of_list[NEXUS1_KICK_OFF_LIST_SIZE];
-}ProdTable;
+}ProdTableEntry;
 
-typedef struct cons_table {
+typedef struct cons_table_entry {
   mem_addr addr;
   int num_of_deps;
   int index;
   task kick_of_list[NEXUS1_KICK_OFF_LIST_SIZE];
-}ConsTable;
+}ConsTableEntry;
 
 class TableEntry {
   private:
@@ -94,21 +94,21 @@ class Table {
 class ProducersTable : Table {
   public:
     ProducersTable(int c): Table(c) {}
-    virtual prod_table* get_entry(mem_addr);
-    virtual bool add_entry(prod_table*);
+    prod_table_entry* get_entry(mem_addr);
+    bool add_entry(prod_table_entry*);
     //bool delete_addr(mem_addr);
-    virtual void print_entries();
+    void print_entries();
     void add_to_kick_off_list(mem_addr, task);
 };
 
 class ConsumersTable : public Table {
   public:
     ConsumersTable(int c): Table(c) {}
-    virtual cons_table* get_entry(mem_addr);
-    virtual bool add_entry(cons_table*);
-    virtual bool delete_entry(cons_table*);
+    cons_table_entry* get_entry(mem_addr);
+    bool add_entry(cons_table_entry*);
+    bool delete_entry(cons_table_entry*);
     bool delete_addr(mem_addr);
-    virtual void print_entries();
+    void print_entries();
     void increment_deps(mem_addr);
     void add_to_kick_off_list(mem_addr, task);
 };

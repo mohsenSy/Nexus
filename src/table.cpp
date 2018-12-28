@@ -92,11 +92,11 @@ void Table::print_entries() {
   }
 }
 
-prod_table* ProducersTable::get_entry(mem_addr addr) {
+prod_table_entry* ProducersTable::get_entry(mem_addr addr) {
   for (int i = 0; i < this->count; i++) {
     TableEntry* te = (TableEntry *)this->entries[i];
     if (te != NULL) {
-      prod_table* en = (prod_table *)this->entries[i]->get_data();
+      prod_table_entry* en = (prod_table_entry *)this->entries[i]->get_data();
       if (en->addr == addr) {
         return en;
       }
@@ -105,12 +105,12 @@ prod_table* ProducersTable::get_entry(mem_addr addr) {
   return NULL;
 }
 
-cons_table* ConsumersTable::get_entry(mem_addr addr) {
+cons_table_entry* ConsumersTable::get_entry(mem_addr addr) {
   //std::cout << "In child class" << std::endl;
   for (int i = 0; i < this->count; i++) {
     TableEntry* te = (TableEntry *)this->entries[i];
     if (te != NULL) {
-      cons_table* en = (cons_table *)this->entries[i]->get_data();
+      cons_table_entry* en = (cons_table_entry *)this->entries[i]->get_data();
       if (en->addr == addr) {
         return en;
       }
@@ -119,11 +119,11 @@ cons_table* ConsumersTable::get_entry(mem_addr addr) {
   return NULL;
 }
 
-bool ConsumersTable::add_entry(cons_table* en) {
+bool ConsumersTable::add_entry(cons_table_entry* en) {
   //std::cout << "Add entry in child class" << std::endl;
   for (int i = 0; i < this->count; i++) {
     if (this->entries[i] != NULL) {
-      cons_table* enn = (cons_table *)this->entries[i]->get_data();
+      cons_table_entry* enn = (cons_table_entry *)this->entries[i]->get_data();
       if (enn != NULL) {
         if (enn->addr == en->addr) {
           //std::cout << "Address already exists" << std::endl;
@@ -135,10 +135,10 @@ bool ConsumersTable::add_entry(cons_table* en) {
   return Table::add_entry((void *)en, 0);
 }
 
-bool ConsumersTable::delete_entry(cons_table* en) {
+bool ConsumersTable::delete_entry(cons_table_entry* en) {
   for (int i = 0; i < this->count; i++) {
     if (this->entries[i] != NULL) {
-      cons_table* enn = (cons_table *)this->entries[i]->get_data();
+      cons_table_entry* enn = (cons_table_entry *)this->entries[i]->get_data();
       if (enn != NULL) {
         if (enn->addr == en->addr) {
           //std::cout << "Address already exists" << std::endl;
@@ -157,11 +157,11 @@ bool ConsumersTable::delete_addr(mem_addr m) {
   return true;
 }
 
-bool ProducersTable::add_entry(prod_table* en) {
+bool ProducersTable::add_entry(prod_table_entry* en) {
   //std::cout << "Add entry in child class" << std::endl;
   for (int i = 0; i < this->count; i++) {
     if (this->entries[i] != NULL) {
-      prod_table* enn = (prod_table *)this->entries[i]->get_data();
+      prod_table_entry* enn = (prod_table_entry *)this->entries[i]->get_data();
       if (enn != NULL) {
         if (enn->addr == en->addr) {
           //std::cout << "Address already exists" << std::endl;
@@ -176,7 +176,7 @@ bool ProducersTable::add_entry(prod_table* en) {
 void ProducersTable::print_entries() {
   for (int i = 0; i < this->count; i++) {
     if (this->entries[i] != NULL) {
-      prod_table* en = (prod_table *)(this->entries[i]->get_data());
+      prod_table_entry* en = (prod_table_entry *)(this->entries[i]->get_data());
       if ( en != NULL) {
         std::cout << en->addr << std::endl;
       }
@@ -187,7 +187,7 @@ void ProducersTable::print_entries() {
 void ConsumersTable::print_entries() {
   for (int i = 0; i < this->count; i++) {
     if (this->entries[i] != NULL) {
-      cons_table* en = (cons_table *)(this->entries[i]->get_data());
+      cons_table_entry* en = (cons_table_entry *)(this->entries[i]->get_data());
       if ( en != NULL) {
         std::cout << en->addr << std::endl;
       }
@@ -196,14 +196,14 @@ void ConsumersTable::print_entries() {
 }
 
 void ConsumersTable::increment_deps(mem_addr addr) {
-  cons_table* e = this->get_entry(addr);
+  cons_table_entry* e = this->get_entry(addr);
   if (e) {
     e->num_of_deps++;
   }
 }
 
 void ConsumersTable::add_to_kick_off_list(mem_addr addr, task t) {
-  cons_table* e = this->get_entry(addr);
+  cons_table_entry* e = this->get_entry(addr);
   if (e) {
     if (e->index < NEXUS1_KICK_OFF_LIST_SIZE) {
       e->kick_of_list[e->index++] = t;
@@ -212,7 +212,7 @@ void ConsumersTable::add_to_kick_off_list(mem_addr addr, task t) {
 }
 
 void ProducersTable::add_to_kick_off_list(mem_addr addr, task t) {
-  prod_table* e = this->get_entry(addr);
+  prod_table_entry* e = this->get_entry(addr);
   if (e) {
     if (e->index < NEXUS1_KICK_OFF_LIST_SIZE) {
       e->kick_of_list[e->index++] = t;
