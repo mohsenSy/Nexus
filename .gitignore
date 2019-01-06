@@ -1,6 +1,7 @@
 // Test source file and executable
 test.cpp
 test
+test_run.sh
 
 // Test Bench exectables
 tb/tb_*
