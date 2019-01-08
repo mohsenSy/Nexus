@@ -1,7 +1,7 @@
 #include <systemc.h>
 
 #include <task.h>
-#include <nexus.h>
+#include <nexus1.h>
 #include <types.h>
 
 class nexus1Helper {
@@ -18,11 +18,15 @@ public:
   sc_signal<bool> t_out_f_sig;
   sc_signal<bool> rdy_sig;
 
-  nexus1 *n1;
+  #ifdef DEBUG
+  sc_signal<int> debug_sig;
+  #endif
+
+  nexus1::nexus *n1;
   nexus1Helper(sc_module_name name) {
     clock = 0;
 
-    n1 = new nexus1(name);
+    n1 = new nexus1::nexus(name);
     n1->clk(clock);
 
     n1->t_in(t_in_sig);
@@ -38,6 +42,10 @@ public:
     n1->t_out_f(t_out_f_sig);
 
     n1->rdy(rdy_sig);
+
+    #ifdef DEBUG
+    n1->debug(debug_sig);
+    #endif
 
   }
 
@@ -76,6 +84,11 @@ public:
       //std::cout<<iter->id<< std::endl;
       send_task(*iter);
     }
+    #ifdef DEBUG
+    debug_sig.write(4);
+    wait();
+    debug_sig.write(0);
+    #endif
     //std::cout << "Sent all tasks" << std::endl;
     int i = 0;
     t_out_f_sig = true;

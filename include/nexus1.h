@@ -1,7 +1,14 @@
 #ifndef _NEXUS1__H
 #define _NEXUS1__H
+
+#include <systemc.h>
+
 #include <table.h>
 #include <types.h>
+
+#include <parameters.h>
+#include <utils.h>
+
 namespace nexus1 {
   class KickOfList {
     private:
@@ -124,7 +131,7 @@ namespace nexus1 {
       }
   };
   enum TaskStatus { NEW, SENT, FINISHED };
-  std::string status_array[] = {"NEW", "SENT", "FINISHED"};
+  static std::string status_array[] = {"NEW", "SENT", "FINISHED"};
   class TaskTableEntry {
     private:
       task t;
@@ -151,8 +158,8 @@ namespace nexus1 {
       int get_deps() {
         return this->deps;
       }
-      void inc_deps(int i = 1) {
-        this->deps += i;
+      void set_deps(int deps) {
+        this->deps = deps;
       }
       bool is_ready() {
         return this->deps == 0;
@@ -160,6 +167,87 @@ namespace nexus1 {
       void print() {
         std::cout << "task id: " << t.id << " status: " << status_array[this->status] << " deps: " << this->deps << std::endl;
       }
+  };
+
+  class TaskPoolEntry {
+    private:
+      task t;
+    public:
+      TaskPoolEntry(task t) {
+        this->t = t;
+      }
+      task get_task() {
+        return this->t;
+      }
+      void set_task(task t) {
+        this->t = t;
+      }
+      void print() {
+        std::cout << "task id: " << t.id << " inputs: " << t.input_args << " outputs: " << t.output_args << std::endl;
+      }
+  };
+  SC_MODULE(nexus) {
+
+    sc_in_clk clk;
+    sc_in<task> t_in; // Task input
+    sc_in<bool> t_in_v; // Is task input valid?
+    sc_out<bool> t_in_f; // Finished reading input task?
+    sc_out<task> t_out; // Task output
+    sc_out<bool> t_out_v; // Is task output valid?
+    sc_in<bool> t_out_f; // Finished reading output task?
+    sc_in<task> t_f_in; // Finished task
+    sc_out<bool> t_f_in_f; // Finished reading finished task?
+    sc_in<bool> t_f_in_v; // Finished task input valid?
+    sc_out<bool> rdy; // Check if nexus is ready or not to receive tasks?
+
+    #ifdef DEBUG
+    sc_in<int> debug;
+    void debug_thread();
+    #endif
+
+    sc_fifo<task> in_buffer; // Buffer for received tasks.
+    sc_fifo<task> ready_queue; // Buffer for tasks ready for execution.
+
+    Table<TaskPoolEntry>* task_pool;
+    Table<TaskTableEntry>* task_table;
+    Table<ProducersTableEntry>* producers_table;
+    Table<ConsumersTableEntry>* consumers_table;
+
+    task previous_task;
+    task previous_f_task;
+
+    // Nexus1 threads
+    void receive(); // Receive a new task and store it in receive buffer
+    void load(); // Load a task from receive buffer to Task Pool and other tables
+    //void schedule(); // Find the next ready task for execution and send it to ready queue
+    void add_to_task_table(task*);
+    int calculate_deps(task*);
+    //void send_task(TaskTableEntry *t);
+
+    //void read_finished(); // Read finished tasks and delete them.
+    //void delete_task(task&);
+
+    SC_CTOR(nexus): in_buffer("in_buffer", NEXUS1_IN_BUFFER_DEPTH), ready_queue("ready_queue", NEXUS1_READY_QUEUE_DEPTH) {
+      rdy.initialize(true);
+      t_out_v.initialize(false);
+      #ifdef DEBUG
+      SC_CTHREAD(debug_thread, clk.pos());
+      #endif
+      previous_task.id = 0;
+      previous_f_task.id = 0;
+
+      task_pool = new Table<TaskPoolEntry>(NEXUS1_TASK_NUM);
+      task_table = new Table<TaskTableEntry>(NEXUS1_TASK_TABLE_SIZE);
+      producers_table = new Table<ProducersTableEntry>(NEXUS1_PRODUCERS_TABLE_SIZE);
+      consumers_table = new Table<ConsumersTableEntry>(NEXUS1_CONSUMERS_TABLE_SIZE);
+
+      PRINTL("new nexus 1 %s", name());
+      SC_CTHREAD(receive, clk.pos());
+      SC_CTHREAD(load, clk.pos());
+      //SC_CTHREAD(schedule, clk.pos());
+      //SC_CTHREAD(read_finished, clk.pos());
+
+    }
   };
 };
 #endif
