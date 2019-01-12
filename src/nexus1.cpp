@@ -5,31 +5,44 @@
 using namespace nexus1;
 
 #ifdef DEBUG
+void nexus::debug_print(int d) {
+  if (d != 0) {
+    if (d == 1) {
+      // Print in_buffer
+      PRINTL("DEBUG: in_buffer:","");
+      in_buffer.dump();
+    }
+    else if (d == 2) {
+      // Print the ready queue
+      PRINTL("DEBUG: ready_queue:","");
+      ready_queue.dump();
+    }
+    else if (d == 3) {
+      // Print the task pool
+      PRINTL("DEBUG: task_pool:","");
+      task_pool->print_entries();
+    }
+    else if (d == 4) {
+      // Print the task table
+      PRINTL("DEBUG: task_table:","");
+      task_table->print_entries();
+    }
+    else if (d == 5) {
+      // Print ConsumersTable
+      PRINTL("DEBUG: consumers_table:","");
+      consumers_table->print_entries();
+    }
+    else if (d == 6) {
+      // Print ProducersTable
+      PRINTL("DEBUG: producers_table:","");
+      producers_table->print_entries();
+    }
+  }
+}
 void nexus::debug_thread() {
   while(true) {
     int d = debug.read();
-    if (d != 0) {
-      if (d == 1) {
-        // Print in_buffer
-        PRINTL("DEBUG: in_buffer:","");
-        in_buffer.dump();
-      }
-      else if (d == 2) {
-        // Print the ready queue
-        PRINTL("DEBUG: ready_queue:","");
-        ready_queue.dump();
-      }
-      else if (d == 3) {
-        // Print the task pool
-        PRINTL("DEBUG: task_pool:","");
-        task_pool->print_entries();
-      }
-      else if (d == 4) {
-        // Print the task table
-        PRINTL("DEBUG: task_table:","");
-        task_table->print_entries();
-      }
-    }
+    debug_print(d);
     wait();
   }
 }
@@ -92,66 +105,69 @@ void nexus::add_to_task_table(task* t) {
 int nexus::calculate_deps(task* t) {
   // Here we fill data in producers and consumers tables
   int deps = 0;
+  //PRINTL("Adding this task %d to tables", t->id);
 
-  /*for (int i = 0; i < t->output_args; i++) {
+  for (int i = 0; i < t->output_args; i++) {
     // Process each output arg
-    cons_table_entry* p = (cons_table_entry *)consumers_table->get_entry(t->get_output_arg(i));
-    if (p != NULL) {
-      consumers_table->add_to_kick_off_list(p->addr, *t);
-      deps += 1;
-      PRINTL("Added to kick off list of addr %d, task %d in consumers", p->addr, t->id);
-    }
-    prod_table_entry* pr = (prod_table_entry *)producers_table->get_entry(t->get_output_arg(i));
-    if (pr == NULL) {
-      pr = new prod_table_entry;
-      pr->index = 0;
-      pr->addr = t->get_output_arg(i);
-      PRINTL("Added new addr %d to task %d in producers", pr->addr, t->id);
-      while (!producers_table->add_entry(pr)) {
+    ConsumersTableEntry* p = consumers_table->get_entry_for_addr(t->get_output_arg(i));
+    if (p != nullptr) {
+      while (!consumers_table->add_task(p->get_addr(), *t)) {
         wait();
       }
+      deps += 1;
+      PRINTL("Added to kick off list in Consumers Table for addr %d, task %d in consumers", p->get_addr(), t->id);
     }
     else {
-      producers_table->add_to_kick_off_list(pr->addr, *t);
-      deps += 1;
-      PRINTL("Added to kick off list of addr %d, task %d in producers", pr->addr, t->id);
-    }
-  }
-
-  for (int i = 0; i < t->input_args; i++) {
-    // Process each input arg
-    prod_table_entry* pr = (prod_table_entry *)producers_table->get_entry(t->get_input_arg(i));
-    if (pr != NULL) {
-      producers_table->add_to_kick_off_list(pr->addr, *t);
-      deps += 1;
-      PRINTL("Added to kick off list of addr %d, task %d in producers", pr->addr, t->id);
-    }
-    cons_table_entry* p = (cons_table_entry *)consumers_table->get_entry(t->get_input_arg(i));
-    if (p == NULL) {
-      p = new cons_table_entry;
-      p->num_of_deps = 1;
-      p->index = 0;
-      p->addr = t->get_input_arg(i);
-      PRINTL("Added new addr %d to task %d in consumers", p->addr, t->id);
-      while(!consumers_table->add_entry(p)) {
-        wait();
-      }
-    }
-    else {
-      if (p->index != 0) {
-        // There are tasks waiting to write to this memory location
-        // Add the task to the kick off list
-        consumers_table->add_to_kick_off_list(p->addr, *t);
-        deps += 1;
-        PRINTL("Added to kick of list of addr %d, task %d in consumers", p->addr, t->id);
+      ProducersTableEntry* pr = producers_table->get_entry_for_addr(t->get_output_arg(i));
+      if (pr == nullptr) {
+        pr = new ProducersTableEntry(t->get_output_arg(i), *t);
+        PRINTL("Added to Producers Table new addr %d to task %d in producers", pr->get_addr(), t->id);
+        while (!producers_table->add_entry(pr, t->id)) {
+          wait();
+        }
       }
       else {
-        // Another task wants to read from this memory location
-        consumers_table->increment_deps(p->addr);
-        PRINTL("Incremented number of deps for addr %d in task %d", p->addr, t->id);
+        while(!producers_table->add_task(pr->get_addr(), *t)) {
+          wait();
+        }
+        deps += 1;
+        PRINTL("Added to kick off list of addr %d, task %d in producers", pr->get_addr(), t->id);
       }
     }
-  }*/
+  }
+  for (int i = 0; i < t->input_args; i++) {
+    // Process each input arg
+    ProducersTableEntry* pr = producers_table->get_entry_for_addr(t->get_input_arg(i));
+    if (pr != NULL) {
+      producers_table->add_task(pr->get_addr(), *t);
+      deps += 1;
+      PRINTL("Added to kick off list of addr %d, task %d in producers", pr->get_addr(), t->id);
+    }
+    else {
+      ConsumersTableEntry* p = consumers_table->get_entry_for_addr(t->get_input_arg(i));
+      if (p == NULL) {
+        p = new ConsumersTableEntry(t->get_input_arg(i));
+        PRINTL("Added new addr %d to task %d in consumers", p->get_addr(), t->id);
+        while(!consumers_table->add_entry(p, t->id)) {
+          wait();
+        }
+      }
+      else {
+        if (!consumers_table->is_kick_of_list_empty(p->get_addr())) {
+          // There are tasks waiting to write to this memory location
+          // Add the task to the kick off list
+          consumers_table->add_task(p->get_addr(), *t);
+          deps += 1;
+          PRINTL("Added to kick of list of addr %d, task %d in consumers", p->get_addr(), t->id);
+        }
+        else {
+          // Another task wants to read from this memory location
+          p->inc_deps();
+          PRINTL("Incremented number of deps for addr %d in task %d", p->get_addr(), t->id);
+        }
+      }
+    }
+  }
 
   return deps;
 }

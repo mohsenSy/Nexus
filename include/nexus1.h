@@ -41,7 +41,7 @@ namespace nexus1 {
       void print() {
         for(int i = 0; i < tasks.size(); i++) {
           if (i == 0) {
-            std::cout << "Kick Of List: ";
+            std::cout << "Kick Of List:" << std::endl;
           }
           std::cout << "i: " << i << " task: " << tasks[i].id << std::endl;
         }
@@ -85,6 +85,26 @@ namespace nexus1 {
       }
   };
 
+  class ProducersTable : public Table<ProducersTableEntry> {
+    public:
+      ProducersTable(int count) : Table<ProducersTableEntry>(count) {}
+      ProducersTableEntry *get_entry_for_addr(mem_addr addr) {
+        for (int i = 0; i < count; i++) {
+          if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data() && entries[i]->get_data()->get_addr() == addr) {
+            return entries[i]->get_data();
+          }
+        }
+        return nullptr;
+      }
+      bool add_task(mem_addr addr, task t) {
+        ProducersTableEntry *pte = this->get_entry_for_addr(addr);
+        if (pte != nullptr) {
+          return pte->add_task(t);
+        }
+        return false;
+      }
+  };
+
   class ConsumersTableEntry {
     private:
       mem_addr addr;
@@ -121,6 +141,10 @@ namespace nexus1 {
         return kick_of_list.push(t);
       }
 
+      bool empty() {
+        return kick_of_list.empty();
+      }
+
       void del_task() {
         kick_of_list.pop();
       }
@@ -130,6 +154,34 @@ namespace nexus1 {
         kick_of_list.print();
       }
   };
+
+  class ConsumersTable : public Table<ConsumersTableEntry> {
+    public:
+      ConsumersTable(int count) : Table<ConsumersTableEntry>(count) {}
+      ConsumersTableEntry *get_entry_for_addr(mem_addr addr) {
+        for (int i = 0; i < count; i++) {
+          if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data() && entries[i]->get_data()->get_addr() == addr) {
+            return entries[i]->get_data();
+          }
+        }
+        return nullptr;
+      }
+      bool add_task(mem_addr addr, task t) {
+        ConsumersTableEntry *cte = this->get_entry_for_addr(addr);
+        if (cte != nullptr) {
+          return cte->add_task(t);
+        }
+        return false;
+      }
+      bool is_kick_of_list_empty(mem_addr addr) {
+        ConsumersTableEntry *cte = this->get_entry_for_addr(addr);
+        if (cte != nullptr) {
+          return cte->empty();
+        }
+        return true;
+      }
+  };
+
   enum TaskStatus { NEW, SENT, FINISHED };
   static std::string status_array[] = {"NEW", "SENT", "FINISHED"};
   class TaskTableEntry {
@@ -203,6 +255,7 @@ namespace nexus1 {
     #ifdef DEBUG
     sc_in<int> debug;
     void debug_thread();
+    void debug_print(int);
     #endif
 
     sc_fifo<task> in_buffer; // Buffer for received tasks.
@@ -210,8 +263,8 @@ namespace nexus1 {
 
     Table<TaskPoolEntry>* task_pool;
     Table<TaskTableEntry>* task_table;
-    Table<ProducersTableEntry>* producers_table;
-    Table<ConsumersTableEntry>* consumers_table;
+    ProducersTable* producers_table;
+    ConsumersTable* consumers_table;
 
     task previous_task;
     task previous_f_task;
@@ -238,8 +291,8 @@ namespace nexus1 {
 
       task_pool = new Table<TaskPoolEntry>(NEXUS1_TASK_NUM);
       task_table = new Table<TaskTableEntry>(NEXUS1_TASK_TABLE_SIZE);
-      producers_table = new Table<ProducersTableEntry>(NEXUS1_PRODUCERS_TABLE_SIZE);
-      consumers_table = new Table<ConsumersTableEntry>(NEXUS1_CONSUMERS_TABLE_SIZE);
+      producers_table = new ProducersTable(NEXUS1_PRODUCERS_TABLE_SIZE);
+      consumers_table = new ConsumersTable(NEXUS1_CONSUMERS_TABLE_SIZE);
 
       PRINTL("new nexus 1 %s", name());
       SC_CTHREAD(receive, clk.pos());

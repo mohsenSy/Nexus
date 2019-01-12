@@ -60,10 +60,9 @@ class TableEntry {
 
 template <class T>
 class Table {
-  private:
+  protected:
     TableEntry<T>** entries;
     int count;
-  protected:
     TableEntry<T> *get_entry(int id) {
       for (int i = 0; i < count; i++) {
         if (entries[i] != nullptr && entries[i]->get_data() != nullptr && entries[i]->get_used() && entries[i]->get_id() == id) {
