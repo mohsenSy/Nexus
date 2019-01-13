@@ -13,9 +13,9 @@ void nexus::debug_print(int d) {
       in_buffer.dump();
     }
     else if (d == 2) {
-      // Print the ready queue
-      PRINTL("DEBUG: ready_queue:","");
-      ready_queue.dump();
+      // Print the task queue
+      PRINTL("DEBUG: task_queue:","");
+      task_queue.dump();
     }
     else if (d == 3) {
       // Print the task pool
@@ -95,10 +95,16 @@ void nexus::load() {
 
 void nexus::add_to_task_table(task* t) {
   TaskTableEntry* tte = new TaskTableEntry(*t);
-  tte->set_deps(calculate_deps(t));
+  int deps = calculate_deps(t);
+  tte->set_deps(deps);
   PRINTL("Task %d has %d deps count", t->id, tte->get_deps());
   while(!task_table->add_entry(tte, t->id)) {
     wait();
+  }
+  if (deps == 0) {
+    while (!task_queue.nb_write(*t)) {
+      wait();
+    }
   }
 }
 

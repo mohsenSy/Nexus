@@ -85,7 +85,9 @@ public:
       send_task(*iter);
     }
     #ifdef DEBUG
-    debug_sig.write(4);
+    debug_sig.write(1);
+    wait();
+    debug_sig.write(2);
     wait();
     debug_sig.write(0);
     #endif

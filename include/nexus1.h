@@ -259,7 +259,7 @@ namespace nexus1 {
     #endif
 
     sc_fifo<task> in_buffer; // Buffer for received tasks.
-    sc_fifo<task> ready_queue; // Buffer for tasks ready for execution.
+    sc_fifo<task> task_queue; // Buffer for tasks ready for execution.
 
     Table<TaskPoolEntry>* task_pool;
     Table<TaskTableEntry>* task_table;
@@ -280,7 +280,7 @@ namespace nexus1 {
     //void read_finished(); // Read finished tasks and delete them.
     //void delete_task(task&);
 
-    SC_CTOR(nexus): in_buffer("in_buffer", NEXUS1_IN_BUFFER_DEPTH), ready_queue("ready_queue", NEXUS1_READY_QUEUE_DEPTH) {
+    SC_CTOR(nexus): in_buffer("in_buffer", NEXUS1_IN_BUFFER_DEPTH), task_queue("task_queue", NEXUS1_READY_QUEUE_DEPTH) {
       rdy.initialize(true);
       t_out_v.initialize(false);
       #ifdef DEBUG
