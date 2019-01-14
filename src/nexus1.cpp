@@ -178,7 +178,55 @@ int nexus::calculate_deps(task* t) {
   return deps;
 }
 
+void nexus::send_task() {
+  t_ready.write(false);
+  while(true) {
+    task t;
+    if (task_queue.nb_read(t)) {
+      PRINTL("Can send task %d out", t.id);
+      t_ready.write(true);
+      while(t_out_f.read() == false) {
+        wait();
+      }
+      t_out.write(t);
+      t_out_v.write(true);
+      wait();
+      while (t_out_f.read() == false) {
+        wait();
+      }
+      //task_table->set_sent(t);
+      t_out_v.write(false);
+    }
+    else {
+      t_ready.write(false);
+    }
+    wait();
+  }
+}
 
+/*void nexus::send_task(TaskTableEntry *t) {
+    // Make sure t_out_f is true
+    while (t_out_f.read() == false) {
+      PRINTL("Waiting for other unit to finish reading", "");
+      wait();
+    }
+    t_out.write(*t->t);
+    t_out_v.write(true);
+    wait();
+    while (t_out_f.read() == false) {
+      PRINTL("Waiting","");
+      wait();
+    }
+    do {
+      //PRINTL("Wait", "");
+      std::cout << t_out_f.read();
+      wait();
+    } while(t_out_f.read() == false);
+    t->status = SENT;
+    PRINTL("Sent task %d", t->t->id);
+    t_out_v.write(false);
+}
+*/
 /*
 void nexus::schedule() {
   while (true) {
@@ -281,29 +329,9 @@ int nexus::calculate_deps(task* t) {
 
   return deps;
 }
+*/
 
-void nexus::send_task(TaskTableEntry *t) {
-    // Make sure t_out_f is true
-    while (t_out_f.read() == false) {
-      PRINTL("Waiting for other unit to finish reading", "");
-      wait();
-    }
-    t_out.write(*t->t);
-    t_out_v.write(true);
-    wait();
-    while (t_out_f.read() == false) {
-      PRINTL("Waiting","");
-      wait();
-    }
-    /*do {
-      //PRINTL("Wait", "");
-      std::cout << t_out_f.read();
-      wait();
-    } while(t_out_f.read() == false);
-    t->status = SENT;
-    PRINTL("Sent task %d", t->t->id);
-    t_out_v.write(false);
-}
+/*
 
 
 void nexus::delete_task(task& t) {

@@ -14,6 +14,7 @@ public:
   sc_signal<bool> t_f_in_v_sig;
   sc_signal<bool> t_f_in_f_sig;
   sc_signal<task> t_out_sig;
+  sc_signal<bool> t_ready_sig;
   sc_signal<bool> t_out_v_sig;
   sc_signal<bool> t_out_f_sig;
   sc_signal<bool> rdy_sig;
@@ -38,6 +39,7 @@ public:
     n1->t_f_in_f(t_f_in_f_sig);
 
     n1->t_out(t_out_sig);
+    n1->t_ready(t_ready_sig);
     n1->t_out_v(t_out_v_sig);
     n1->t_out_f(t_out_f_sig);
 

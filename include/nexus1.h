@@ -245,6 +245,7 @@ namespace nexus1 {
     sc_in<bool> t_in_v; // Is task input valid?
     sc_out<bool> t_in_f; // Finished reading input task?
     sc_out<task> t_out; // Task output
+    sc_out<bool> t_ready; // Is there a ready task for execution?
     sc_out<bool> t_out_v; // Is task output valid?
     sc_in<bool> t_out_f; // Finished reading output task?
     sc_in<task> t_f_in; // Finished task
@@ -275,7 +276,7 @@ namespace nexus1 {
     //void schedule(); // Find the next ready task for execution and send it to ready queue
     void add_to_task_table(task*);
     int calculate_deps(task*);
-    //void send_task(TaskTableEntry *t);
+    void send_task();
 
     //void read_finished(); // Read finished tasks and delete them.
     //void delete_task(task&);
@@ -283,6 +284,7 @@ namespace nexus1 {
     SC_CTOR(nexus): in_buffer("in_buffer", NEXUS1_IN_BUFFER_DEPTH), task_queue("task_queue", NEXUS1_READY_QUEUE_DEPTH) {
       rdy.initialize(true);
       t_out_v.initialize(false);
+      t_ready.initialize(false);
       #ifdef DEBUG
       SC_CTHREAD(debug_thread, clk.pos());
       #endif
@@ -297,6 +299,7 @@ namespace nexus1 {
       PRINTL("new nexus 1 %s", name());
       SC_CTHREAD(receive, clk.pos());
       SC_CTHREAD(load, clk.pos());
+      SC_CTHREAD(send_task, clk.pos());
       //SC_CTHREAD(schedule, clk.pos());
       //SC_CTHREAD(read_finished, clk.pos());
 
