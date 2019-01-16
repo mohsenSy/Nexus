@@ -221,6 +221,11 @@ namespace nexus1 {
       }
   };
 
+  class TaskTable : public Table<TaskTableEntry> {
+    public:
+      TaskTable(int count) : Table<TaskTableEntry>(count) {}
+  };
+
   class TaskPoolEntry {
     private:
       task t;
@@ -263,7 +268,8 @@ namespace nexus1 {
     sc_fifo<task> task_queue; // Buffer for tasks ready for execution.
 
     Table<TaskPoolEntry>* task_pool;
-    Table<TaskTableEntry>* task_table;
+    //Table<TaskTableEntry>* task_table;
+    TaskTable* task_table;
     ProducersTable* producers_table;
     ConsumersTable* consumers_table;
 
@@ -278,7 +284,7 @@ namespace nexus1 {
     int calculate_deps(task*);
     void send_task();
 
-    //void read_finished(); // Read finished tasks and delete them.
+    void read_finished(); // Read finished tasks and delete them.
     //void delete_task(task&);
 
     SC_CTOR(nexus): in_buffer("in_buffer", NEXUS1_IN_BUFFER_DEPTH), task_queue("task_queue", NEXUS1_READY_QUEUE_DEPTH) {
@@ -292,7 +298,7 @@ namespace nexus1 {
       previous_f_task.id = 0;
 
       task_pool = new Table<TaskPoolEntry>(NEXUS1_TASK_NUM);
-      task_table = new Table<TaskTableEntry>(NEXUS1_TASK_TABLE_SIZE);
+      task_table = new TaskTable(NEXUS1_TASK_TABLE_SIZE);
       producers_table = new ProducersTable(NEXUS1_PRODUCERS_TABLE_SIZE);
       consumers_table = new ConsumersTable(NEXUS1_CONSUMERS_TABLE_SIZE);
 
@@ -301,7 +307,7 @@ namespace nexus1 {
       SC_CTHREAD(load, clk.pos());
       SC_CTHREAD(send_task, clk.pos());
       //SC_CTHREAD(schedule, clk.pos());
-      //SC_CTHREAD(read_finished, clk.pos());
+      SC_CTHREAD(read_finished, clk.pos());
 
     }
   };

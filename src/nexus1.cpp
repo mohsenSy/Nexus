@@ -204,29 +204,6 @@ void nexus::send_task() {
   }
 }
 
-/*void nexus::send_task(TaskTableEntry *t) {
-    // Make sure t_out_f is true
-    while (t_out_f.read() == false) {
-      PRINTL("Waiting for other unit to finish reading", "");
-      wait();
-    }
-    t_out.write(*t->t);
-    t_out_v.write(true);
-    wait();
-    while (t_out_f.read() == false) {
-      PRINTL("Waiting","");
-      wait();
-    }
-    do {
-      //PRINTL("Wait", "");
-      std::cout << t_out_f.read();
-      wait();
-    } while(t_out_f.read() == false);
-    t->status = SENT;
-    PRINTL("Sent task %d", t->t->id);
-    t_out_v.write(false);
-}
-*/
 /*
 void nexus::schedule() {
   while (true) {
@@ -238,7 +215,7 @@ void nexus::schedule() {
     wait();
   }
 }
-
+*/
 
 void nexus::read_finished() {
   t_f_in_f.write(false);
@@ -254,13 +231,13 @@ void nexus::read_finished() {
         t_f_in_f.write(true);
         wait();
         // Now delete task from all tables
-        delete_task(t);
+        //delete_task(t);
       }
     }
     wait();
   }
 }
-
+/*
 // Implement other nexus1 methods
 
 int nexus::calculate_deps(task* t) {
