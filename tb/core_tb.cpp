@@ -19,6 +19,7 @@ public:
   sc_signal<mem_addr, SC_MANY_WRITERS> memory_addr_sig;
   sc_signal<bool, SC_MANY_WRITERS> memory_addr_v_sig;
   sc_signal<bool, SC_MANY_WRITERS> memory_addr_f_sig;
+  sc_signal<bool, SC_MANY_WRITERS> memory_addr_rdy_sig;
 
   memory *m;
   core *c;
@@ -31,6 +32,7 @@ public:
     m->addr(memory_addr_sig);
     m->addr_v(memory_addr_v_sig);
     m->addr_f(memory_addr_f_sig);
+    m->addr_rdy(memory_addr_rdy_sig);
 
     c = new core(name);
     c->clk(clock);
@@ -48,6 +50,7 @@ public:
     c->memory_addr(memory_addr_sig);
     c->memory_addr_v(memory_addr_v_sig);
     c->memory_addr_f(memory_addr_f_sig);
+    c->memory_addr_rdy(memory_addr_rdy_sig);
   }
 
   void wait() {
@@ -93,6 +96,7 @@ public:
       std::cout << "Waiting for rdy_sig" << std::endl;
       wait();
     }*/
+    std::cout << "Number of memory cycles is " << c->mem_cycles << std::endl;
     sc_stop();
   }
 

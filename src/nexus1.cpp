@@ -69,12 +69,9 @@ void nexus::receive() {
         rdy.write(true);
         t_in_f.write(true);
       }
-
     }
     wait();
-
   }
-
 }
 
 void nexus::load() {
@@ -174,7 +171,6 @@ int nexus::calculate_deps(task* t) {
       }
     }
   }
-
   return deps;
 }
 

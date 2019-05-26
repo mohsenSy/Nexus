@@ -34,6 +34,7 @@ SC_MODULE(core) {
   sc_out<bool> memory_addr_v;
   sc_in<bool> memory_addr_f;
   sc_in<bool> memory_rdy;
+  sc_in<bool> memory_addr_rdy;
 
   execute* ex;
   sc_signal<bool> rdy_sig;
@@ -50,6 +51,8 @@ SC_MODULE(core) {
   task previous_task;
   bool core_rdy;
 
+  int mem_cycles;
+
   void prepare(); // Read a task and add it to the FIFO.
   void send_task(); // Read a task from FIFO, fetch its arguments and send it to execution unit
   void handle_finished(); // Read the finished task from execution unit.
@@ -59,6 +62,7 @@ SC_MODULE(core) {
     rdy.initialize(true);
     t_out_v.initialize(false);
     previous_task.id = 0;
+    mem_cycles = 0;
 
     PRINTL("new core %s", name());
 

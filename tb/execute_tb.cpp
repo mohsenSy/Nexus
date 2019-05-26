@@ -54,7 +54,7 @@ public:
       wait();
     } while(t_in_f_sig == false);
     t_in_v_sig = false;
-    std::cout << "Sent task " << t.id << std::endl;
+    // std::cout << "Sent task " << t.id << std::endl;
     wait();
   }
 
