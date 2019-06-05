@@ -33,6 +33,7 @@ SC_MODULE(board) {
   sc_signal<mem_addr, SC_MANY_WRITERS> memory_addr_sig;
   sc_signal<bool, SC_MANY_WRITERS> memory_addr_v_sig;
   sc_signal<bool, SC_MANY_WRITERS> memory_addr_f_sig;
+  sc_signal<bool, SC_MANY_WRITERS> memory_addr_rdy_sig;
 
   task previous_task;
   int num_tasks;
@@ -57,6 +58,7 @@ SC_MODULE(board) {
     mem->addr(memory_addr_sig);
     mem->addr_f(memory_addr_f_sig);
     mem->addr_v(memory_addr_v_sig);
+    mem->addr_rdy(memory_addr_rdy_sig);
 
     // initialize the task FIFO
     sc_fifo<task> taskFifo (TASK_NUM);
@@ -83,6 +85,7 @@ SC_MODULE(board) {
       cores[i].memory_addr(memory_addr_sig);
       cores[i].memory_addr_v(memory_addr_v_sig);
       cores[i].memory_addr_f(memory_addr_f_sig);
+      cores[i].memory_addr_rdy(memory_addr_rdy_sig);
     }
   }
 };
