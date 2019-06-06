@@ -20,8 +20,8 @@ SC_MODULE(memory) {
   sc_in<bool> clk;
   sc_in<mem_addr> addr; // Memory address to fetch
   sc_in<bool> addr_v; // Address is valid?
-  sc_out<bool> addr_rdy; // Data is ready on ouput port (not defined here for simplicity)
   sc_out<bool> addr_f; // finished reading memory address
+  sc_out<bool> addr_rdy; // Data is ready on ouput port (not defined here for simplicity)
   sc_out<bool> rdy; // Ready to receive a new address?
   sc_mutex mutex;
 
