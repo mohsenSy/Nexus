@@ -14,7 +14,7 @@ public:
   sc_signal<bool> t_out_v_sig;
   sc_signal<bool> t_out_f_sig;
   sc_signal<bool> rdy_sig;
-  sc_signal<bool> finished_sig;
+
   execute *ex;
   executeHelper(sc_module_name name) {
     ex = new execute(name);
@@ -68,6 +68,7 @@ public:
         wait();
       }
       t_out_f_sig = true;
+      task t = t_out_sig;
       wait();
     }
     while (rdy_sig != true) {
@@ -81,28 +82,9 @@ public:
 
 int sc_main(int argc, char **argv) {
 
-  task t_in;
-  task t2_in;
-  task t3_in;
-  task t_out;
-  t_in.id = 1;
-  t_in.delay = 3;
-  t_in.input_args = 2;
-  t_in.output_args = 2;
-  t2_in.id = 2;
-  t2_in.delay = 2;
-  t3_in.id = 3;
-  t3_in.delay = 1;
 
-  mem_addr m1 = (mem_addr *)&t2_in;
-  mem_addr m2 = (mem_addr *)&t3_in;
-  t_in.set_input_args(2, m1, m2);
-  t_in.set_output_args(2, m1, m2);
-
-  executeHelper *exH = new executeHelper("ex2");
+  executeHelper *exH = new executeHelper("execute unit 0");
   std::string fileName = "m.csv";
-  //cout << "Enter file name: ";
-  //cin >> fileName;
   std::vector<task> tasks;
 
   read_tasks(fileName, &tasks);

@@ -71,7 +71,6 @@ SC_MODULE(core) {
     ex->t_in(t_in_sig);
     ex->t_in_v(t_in_v_sig);
     ex->t_in_f(t_in_f_sig);
-    //ex->finished(finished_sig);
     ex->t_out(t_out_sig);
     ex->t_out_v(t_out_v_sig);
     ex->t_out_f(t_out_f_sig);

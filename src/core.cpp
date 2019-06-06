@@ -9,7 +9,6 @@ void core::handle_finished(void) {
     t_out_v.write(false);
     if(t_out_v_sig == true) {
       task t = t_out_sig;
-      t_out_f_sig = true;
       PRINTL("task finished %d",t.id);
       this->m.lock();
       this->num_tasks--;
@@ -80,6 +79,7 @@ void core::send_task(void) {
     }
     //PRINTL("Ready to send task %d to execution unit", t.id);
     t_in_v_sig = false;
+    wait();
   }
 }
 
@@ -96,17 +96,15 @@ void core::prepare(void) {
       wait();
       continue;
     }
-    rdy.write(true);
     if(t_in_v.read()) {
       task t = t_in.read();
       if (previous_task != t) {
         previous_task = t;
         //PRINTL("preparing task %d", t.id);
         // If the buffer is full wait until a task finishes
-        PRINTL("BUFFER_DEPTH is %d, num_tasks is %d", BUFFER_DEPTH, this->num_tasks);
+        // PRINTL("BUFFER_DEPTH is %d, num_tasks is %d", BUFFER_DEPTH, this->num_tasks);
         while(this->num_tasks == BUFFER_DEPTH) {
           rdy.write(false);
-          PRINTL("RDY is false", "");
           wait();
         }
         /*while(!taskFifo.nb_write(t)) {
@@ -129,6 +127,7 @@ void core::prepare(void) {
         //rdy.write(true);
       }
     }
+    rdy.write(true);
     wait();
   }
 }
