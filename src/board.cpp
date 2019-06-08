@@ -11,16 +11,13 @@ void board::receiveTask() {
     t_in_f.write(false);
     if(t_in_v.read() == true && t != previous_task) {
       previous_task = t;
-      while(num_tasks == TASK_NUM) {
+      while(!taskFifo.nb_write(t)) {
         // The task buffer is full and cannot receive new tasks
         rdy.write(false);
         wait();
       }
       rdy.write(true);
-      taskFifo.write(t);
-      num_tasks++;
       t_in_f.write(true);
-      PRINTL("Board new task with id %d", t.id);
     }
     wait();
   }
@@ -40,7 +37,6 @@ void board::sendTask() {
     // Loop through the cores to find a ready one
     int i = 0;
     while( rdy_sigs[i] != true) {
-      PRINTL("waiting for core after %d", i);
       wait();
       if (++i == CORE_NUM) {
         i = 0;
@@ -58,7 +54,6 @@ void board::sendTask() {
       wait();
     }
     t_in_v_sigs[i] = false;
-    num_tasks--;
     wait();
   }
 }

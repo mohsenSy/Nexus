@@ -36,7 +36,6 @@ SC_MODULE(board) {
   sc_signal<bool, SC_MANY_WRITERS> memory_addr_rdy_sig;
 
   task previous_task;
-  int num_tasks;
   sc_fifo<task> taskFifo;
 
   void receiveTask();
@@ -49,7 +48,6 @@ SC_MODULE(board) {
     SC_CTHREAD(sendTask, clk.pos());
     //SC_THREAD(sendTask);
     //sensitive << clk;
-    num_tasks = 0;
     previous_task.id = 0;
 
     mem = new memory("memory_controller");
