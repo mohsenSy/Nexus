@@ -93,9 +93,12 @@ void core::prepare(void) {
 
   while (true) {
     if (num_tasks == BUFFER_DEPTH) {
+      rdy.write(false);
       wait();
       continue;
     }
+    rdy.write(true);
+    wait();
     if(t_in_v.read()) {
       task t = t_in.read();
       if (previous_task != t) {
@@ -103,10 +106,10 @@ void core::prepare(void) {
         //PRINTL("preparing task %d", t.id);
         // If the buffer is full wait until a task finishes
         // PRINTL("BUFFER_DEPTH is %d, num_tasks is %d", BUFFER_DEPTH, this->num_tasks);
-        while(this->num_tasks == BUFFER_DEPTH) {
+        /*while(this->num_tasks == BUFFER_DEPTH) {
           rdy.write(false);
           wait();
-        }
+        }*/
         /*while(!taskFifo.nb_write(t)) {
           rdy.write(false);
           PRINTL("RDY is false", "");
@@ -117,14 +120,13 @@ void core::prepare(void) {
         this->m.lock();
         this->num_tasks++;
         this->m.unlock();
-        if (num_tasks == BUFFER_DEPTH) {
+        /*if (num_tasks == BUFFER_DEPTH) {
           rdy.write(false);
-        }
+        }*/
         t_in_f.write(true);
         wait();
         t_in_f.write(false);
         wait();
-        //rdy.write(true);
       }
     }
     rdy.write(true);

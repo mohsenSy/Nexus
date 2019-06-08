@@ -49,7 +49,6 @@ SC_MODULE(core) {
   sc_fifo<task> taskFifo;
   int num_tasks;
   task previous_task;
-  bool core_rdy;
 
   int mem_cycles;
 
@@ -77,7 +76,6 @@ SC_MODULE(core) {
     ex->clk(clk);
 
     num_tasks = 0;
-    core_rdy = true;
     SC_CTHREAD(prepare, clk.pos());
     SC_CTHREAD(send_task, clk.pos());
     SC_CTHREAD(handle_finished, clk.pos());
