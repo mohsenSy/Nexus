@@ -9,10 +9,6 @@ void core::handle_finished(void) {
     t_out_v.write(false);
     if(t_out_v_sig == true) {
       task t = t_out_sig;
-      PRINTL("task finished %d",t.id);
-      this->m.lock();
-      this->num_tasks--;
-      this->m.unlock();
       //finished.write(true);
       t_out.write(t);
       t_out_v.write(true);
@@ -92,13 +88,10 @@ void core::prepare(void) {
   t_in_f.write(false);
 
   while (true) {
-    if (num_tasks == BUFFER_DEPTH) {
+    while(taskFifo.num_free() == 0) {
       rdy.write(false);
       wait();
-      continue;
     }
-    rdy.write(true);
-    wait();
     if(t_in_v.read()) {
       task t = t_in.read();
       if (previous_task != t) {
@@ -115,14 +108,11 @@ void core::prepare(void) {
           PRINTL("RDY is false", "");
           wait();
         }*/
-        taskFifo.write(t);
-        PRINTL("receive task with id %d", t.id);
-        this->m.lock();
-        this->num_tasks++;
-        this->m.unlock();
-        /*if (num_tasks == BUFFER_DEPTH) {
+        while (!taskFifo.nb_write(t)) {
           rdy.write(false);
-        }*/
+          wait();
+        }
+        //PRINTL("receive task with id %d", t.id);
         t_in_f.write(true);
         wait();
         t_in_f.write(false);

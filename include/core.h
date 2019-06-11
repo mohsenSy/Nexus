@@ -45,7 +45,7 @@ SC_MODULE(core) {
   sc_signal<bool> t_out_v_sig;
   sc_signal<bool> t_out_f_sig;
 
-  std::mutex m;
+  //std::mutex m;
   sc_fifo<task> taskFifo;
   int num_tasks;
   task previous_task;

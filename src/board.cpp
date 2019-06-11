@@ -2,6 +2,7 @@
 #include <board.h>
 
 #include <utils.h>
+#include <stats.h>
 
 void board::receiveTask() {
   rdy.write(true);
@@ -38,6 +39,8 @@ void board::sendTask() {
     int i = 0;
     while( rdy_sigs[i] != true) {
       wait();
+      PRINTL("Waiting for core after %d", i);
+      Stats::inc_core_wait_cycles();
       if (++i == CORE_NUM) {
         i = 0;
       }
@@ -50,7 +53,8 @@ void board::sendTask() {
 
     while (t_in_f_sigs[i] != true) {
       // Wait untl the task is read by the core unit
-      PRINTL("Wait until task %d is read by core %d", t.id, i);
+      //PRINTL("Wait until task %d is read by core %d", t.id, i);
+      //Stats::inc_core_wait_cycles();
       wait();
     }
     t_in_v_sigs[i] = false;

@@ -5,6 +5,7 @@
 
 #include <task.h>
 #include <board.h>
+#include <stats.h>
 
 class boardHelper {
 public:
@@ -67,6 +68,7 @@ public:
       std::cout << "Waiting for rdy_sig" << std::endl;
       wait();
     }*/
+    Stats::print_core_wait_cycles();
     sc_stop();
   }
 
