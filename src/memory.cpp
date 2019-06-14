@@ -1,6 +1,7 @@
 #include <memory.h>
 #include <parameters.h>
 #include <utils.h>
+#include <stats.h>
 
 void memory::do_fetch() {
   // Initialization
@@ -20,16 +21,20 @@ void memory::do_fetch() {
         addr_f.write(true);
         rdy.write(false);
         wait();
+        Stats::inc_memory_cycles();
         for (int i = 0; i < MEM_FETCH_TIME; i++) {
           wait();
+          Stats::inc_memory_cycles();
         }
         addr_f.write(false);
         rdy.write(true);
         addr_rdy.write(true);
         wait();
+        Stats::inc_memory_cycles();
         //PRINTL("Finished reading input %d", a);
     }
     addr_rdy.write(false);
     wait();
+    Stats::inc_memory_cycles();
   }
 }

@@ -69,6 +69,8 @@ public:
       wait();
     }*/
     Stats::print_core_wait_cycles();
+    Stats::print_execute_cycles();
+    Stats::print_memory_cycles();
     sc_stop();
   }
 

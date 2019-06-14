@@ -1,5 +1,6 @@
 #include <execute.h>
 #include <utils.h>
+#include <stats.h>
 
 void execute::do_execute() {
 
@@ -24,12 +25,14 @@ void execute::do_execute() {
           t_in_f.write(true);
           previous_task = t;
           wait();
+          Stats::inc_execute_cycles();
           // Get delay from task - Task Execution is modelled as delay here.
           //PRINTL("Delay is %d", t.delay);
           PRINTL("Started executing task %d", t.id);
           for (int i = 0; i < t.delay ; i++) {
             //PRINTL("executing task %d", t.id);
             wait();
+            Stats::inc_execute_cycles();
           }
           // Write finished task to output port and set ouput as valid
           t_out.write(t);
@@ -40,6 +43,7 @@ void execute::do_execute() {
           do {
             // Wait until task is read by core unit
             wait();
+            Stats::inc_execute_cycles();
           } while(t_out_f.read() == false);
           // Invalidate task output
           t_out_v.write(false);
@@ -48,5 +52,6 @@ void execute::do_execute() {
         }
     }
     wait();
+    Stats::inc_execute_cycles();
   }
 }
