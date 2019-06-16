@@ -16,6 +16,7 @@ void core::handle_finished(void) {
       t_out_f_sig = true;
       wait();
       t_out_f_sig = false;
+      dec_tasks_num();
       // This will be added when Nexus is implemented, right now no other unit reads the finished task.
       /*while(t_out_f.read() == false) {
         // Wait for the finished task to be read by the other unit
@@ -43,13 +44,15 @@ void core::fetch_input(mem_addr addr) {
     mem_cycles+=2;
     wait();
   }
+  memory_addr_v = false;
+  wait();
   memory_mutex.unlock();
 }
 
 void core::send_task(void) {
   while (true) {
     task t;
-    while(!taskFifo.nb_read(t)) {
+    while(!readTask(t)) {
       wait();
     }
     int num_inputs = t.input_args;
@@ -88,7 +91,7 @@ void core::prepare(void) {
   t_in_f.write(false);
 
   while (true) {
-    while(taskFifo.num_free() == 0) {
+    while(get_tasks_num() == BUFFER_DEPTH) {
       rdy.write(false);
       wait();
     }
@@ -108,18 +111,67 @@ void core::prepare(void) {
           PRINTL("RDY is false", "");
           wait();
         }*/
-        while (!taskFifo.nb_write(t)) {
+        while (!addTask(t)) {
           rdy.write(false);
           wait();
         }
+        inc_tasks_num();
         //PRINTL("receive task with id %d", t.id);
+        PRINTL("Num of tasks is %d", get_tasks_num());
+        if (get_tasks_num() == BUFFER_DEPTH) {
+          rdy.write(false);
+          wait();
+        }
         t_in_f.write(true);
         wait();
         t_in_f.write(false);
         wait();
+        while(get_tasks_num() == BUFFER_DEPTH) {
+          rdy.write(false);
+          wait();
+        }
       }
     }
     rdy.write(true);
     wait();
   }
+}
+
+bool core::addTask(task &t) {
+  task_fifo_mutex.lock();
+  bool ret = taskFifo.nb_write(t);
+  task_fifo_mutex.unlock();
+  return ret;
+}
+
+bool core::readTask(task &t) {
+  task_fifo_mutex.lock();
+  bool ret = taskFifo.nb_read(t);
+  task_fifo_mutex.unlock();
+  return ret;
+}
+
+int core::num_free() {
+  task_fifo_mutex.lock();
+  int ret = taskFifo.num_free();
+  task_fifo_mutex.unlock();
+  return ret;
+}
+
+void core::inc_tasks_num() {
+  tasks_num_mutex.lock();
+  num_tasks++;
+  tasks_num_mutex.unlock();
+}
+
+void core::dec_tasks_num() {
+  tasks_num_mutex.lock();
+  num_tasks--;
+  tasks_num_mutex.unlock();
+}
+int core::get_tasks_num() {
+  tasks_num_mutex.lock();
+  int num = num_tasks;
+  tasks_num_mutex.unlock();
+  return num;
 }

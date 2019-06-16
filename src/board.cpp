@@ -16,6 +16,7 @@ void board::receiveTask() {
         // The task buffer is full and cannot receive new tasks
         rdy.write(false);
         wait();
+        Stats::inc_board_buffer_wait_cycles();
       }
       rdy.write(true);
       t_in_f.write(true);
@@ -25,6 +26,7 @@ void board::receiveTask() {
 }
 
 void board::sendTask() {
+  int i = 0;
   while (true) {
     // Read a task from FIFO
     task t;
@@ -36,7 +38,6 @@ void board::sendTask() {
     PRINTL("Read a task with id %d from buffer", t.id);
 
     // Loop through the cores to find a ready one
-    int i = 0;
     while( rdy_sigs[i] != true) {
       wait();
       PRINTL("Waiting for core after %d", i);
@@ -45,12 +46,13 @@ void board::sendTask() {
         i = 0;
       }
     }
+    std::cout << sc_time_stamp() << " : " << rdy_sigs[i] << std::endl;
     PRINTL("Sending task with id %d to core %d", t.id, i);
 
     // Send task to the chosen core
     t_in_sigs[i] = t;
     t_in_v_sigs[i] = true;
-
+    wait();
     while (t_in_f_sigs[i] != true) {
       // Wait untl the task is read by the core unit
       //PRINTL("Wait until task %d is read by core %d", t.id, i);

@@ -35,6 +35,5 @@ void memory::do_fetch() {
     }
     addr_rdy.write(false);
     wait();
-    Stats::inc_memory_cycles();
   }
 }

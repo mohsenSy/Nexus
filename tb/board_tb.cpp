@@ -61,7 +61,7 @@ public:
     }
     std::cout << "Sent all tasks" << std::endl;
     int i = 0;
-    while (i++ != 10000) {
+    while (i++ != 100000) {
       wait();
     }
     /*while (rdy_sig != true) {
@@ -71,6 +71,7 @@ public:
     Stats::print_core_wait_cycles();
     Stats::print_execute_cycles();
     Stats::print_memory_cycles();
+    Stats::print_board_buffer_wait_cycles();
     sc_stop();
   }
 

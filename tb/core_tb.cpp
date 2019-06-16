@@ -66,6 +66,7 @@ public:
     // Make sure the core unit is ready to receive a new task
     while(rdy_sig == false) {
       wait();
+      std::cout << sc_time_stamp() << " : Waiting for core to be ready" << std::endl;
     }
     t_in_v_sig = true;
     t_in_sig = t;
@@ -98,7 +99,7 @@ public:
 int sc_main(int argc, char **argv) {
 
   coreHelper *cH = new coreHelper("core1");
-  std::string fileName = "m.csv";
+  std::string fileName = "temp.csv";
   std::vector<task> tasks;
   read_tasks(fileName, &tasks);
   cH->run(tasks);

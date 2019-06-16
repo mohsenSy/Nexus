@@ -57,11 +57,22 @@ SC_MODULE(core) {
   void handle_finished(); // Read the finished task from execution unit.
   void fetch_input(mem_addr);
 
+  bool addTask(task &t);
+  bool readTask(task &t);
+  int num_free();
+  sc_mutex task_fifo_mutex;
+
+  void inc_tasks_num();
+  void dec_tasks_num();
+  int get_tasks_num();
+  sc_mutex tasks_num_mutex;
+
   SC_CTOR(core): taskFifo(BUFFER_DEPTH)   {
     rdy.initialize(true);
     t_out_v.initialize(false);
     previous_task.id = 0;
     mem_cycles = 0;
+    num_tasks = 0;
 
     PRINTL("new core %s", name());
 

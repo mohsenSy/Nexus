@@ -34,3 +34,14 @@ void Stats::print_memory_cycles() {
   std::cout << sc_time_stamp() << ": Memory Cycles: " << memory_cycles << std::endl;
   memory_cycles_mutex.unlock();
 }
+
+void Stats::inc_board_buffer_wait_cycles() {
+  board_buffer_wait_cycles_mutex.lock();
+  board_buffer_wait_cycles++;
+  board_buffer_wait_cycles_mutex.unlock();
+}
+void Stats::print_board_buffer_wait_cycles() {
+  board_buffer_wait_cycles_mutex.lock();
+  std::cout << sc_time_stamp() << ": Board Buffer Wait Cycles: " << board_buffer_wait_cycles << std::endl;
+  board_buffer_wait_cycles_mutex.unlock();
+}
