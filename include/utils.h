@@ -16,7 +16,7 @@
 #define LOG(file_name, fmt, ...) printll(__FILE__, name(), file_name, fmt, __VA_ARGS__);
 
 void printl(const char* file_name, const char* module_name, const char* fmt...);
-void printll(const char* file_name, const char* module_name, const char* name, const char* fmt...);
+void printll(const char* file_name, const char* module_name, std::string name, const char* fmt...);
 
 void read_tasks(std::string filename, std::vector<task> * tasks);
 

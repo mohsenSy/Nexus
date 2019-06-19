@@ -68,6 +68,7 @@ public:
       std::cout << "Waiting for rdy_sig" << std::endl;
       wait();
     }*/
+    Stats::print_core_finished_tasks_num();
     Stats::print_core_wait_cycles();
     Stats::print_execute_cycles();
     Stats::print_memory_cycles();

@@ -13,6 +13,17 @@ void Stats::print_core_wait_cycles() {
   core_wait_cycles_mutex.unlock();
 }
 
+void Stats::inc_core_finished_tasks_num() {
+  core_finished_tasks_num_mutex.lock();
+  core_finished_tasks_num++;
+  core_finished_tasks_num_mutex.unlock();
+}
+void Stats::print_core_finished_tasks_num() {
+  core_finished_tasks_num_mutex.lock();
+  std::cout << sc_time_stamp() << ": Number of finished tasks is " << core_finished_tasks_num << std::endl;
+  core_finished_tasks_num_mutex.unlock();
+}
+
 void Stats::inc_execute_cycles() {
   execute_cycles_mutex.lock();
   execute_cycles++;

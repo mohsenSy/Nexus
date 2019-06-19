@@ -38,7 +38,7 @@ void printl(const char* file_name, const char* module_name, const char* fmt...){
   va_end(args);
 }
 
-void printll(const char* file_name, const char* module_name,const char *name, const char* fmt...){
+void printll(const char* file_name, const char* module_name,std::string name, const char* fmt...){
   ofstream ofile;
   ofile.open(name, ios::app);
   ofile << "@" << sc_time_stamp() << ": " << file_name << ":" << module_name <<  "  ";

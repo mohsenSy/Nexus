@@ -2,6 +2,8 @@
 #include <utils.h>
 #include <mutex>
 
+#include <stats.h>
+
 sc_mutex memory_mutex;
 
 void core::handle_finished(void) {
@@ -15,6 +17,10 @@ void core::handle_finished(void) {
       //rdy.write(true);
       t_out_f_sig = true;
       wait();
+      std::string n = name();
+      std::string nn = n.append(".count");
+      LOG(nn, "Finished task %d", t.id);
+      Stats::inc_core_finished_tasks_num();
       t_out_f_sig = false;
       dec_tasks_num();
       // This will be added when Nexus is implemented, right now no other unit reads the finished task.
@@ -57,10 +63,12 @@ void core::send_task(void) {
     }
     int num_inputs = t.input_args;
     // fetch input args
+    LOG(name(), "fetching inputs for %d", t.id);
     PRINTL("fetching inputs for %d, %d", t.id, num_inputs);
     for (int i = 0; i < num_inputs; i++) {
       fetch_input(t.in_args[i]);
     }
+    LOG(name(), "Done fetching inputs for %d", t.id);
     // Wait until the execution unit finishes current task
     while (rdy_sig == false) {
       wait();
@@ -70,6 +78,7 @@ void core::send_task(void) {
     t_in_sig = t;
     t_in_v_sig = true;
     wait();
+    LOG(name(), "Sent task %d to execution", t.id);
 
     while (t_in_f_sig != true) {
       // Wait until task is read by execution unit
@@ -99,25 +108,13 @@ void core::prepare(void) {
       task t = t_in.read();
       if (previous_task != t) {
         previous_task = t;
-        //PRINTL("preparing task %d", t.id);
-        // If the buffer is full wait until a task finishes
-        // PRINTL("BUFFER_DEPTH is %d, num_tasks is %d", BUFFER_DEPTH, this->num_tasks);
-        /*while(this->num_tasks == BUFFER_DEPTH) {
-          rdy.write(false);
-          wait();
-        }*/
-        /*while(!taskFifo.nb_write(t)) {
-          rdy.write(false);
-          PRINTL("RDY is false", "");
-          wait();
-        }*/
+        LOG(name(), "Task %d received", t.id);
         while (!addTask(t)) {
           rdy.write(false);
           wait();
         }
         inc_tasks_num();
-        //PRINTL("receive task with id %d", t.id);
-        PRINTL("Num of tasks is %d", get_tasks_num());
+        LOG(name(), "Task %d ready", t.id);
         if (get_tasks_num() == BUFFER_DEPTH) {
           rdy.write(false);
           wait();
