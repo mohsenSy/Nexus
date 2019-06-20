@@ -4,6 +4,7 @@
 #include <core.h>
 #include <memory.h>
 #include <types.h>
+#include <parameters.h>
 
 class memoryHelper {
 public:
@@ -11,8 +12,10 @@ public:
   sc_signal<mem_addr> addr_sig;
   sc_signal<bool> addr_v_sig;
   sc_signal<bool> addr_f_sig;
-  sc_signal<bool> addr_rdy_sig;
+  sc_signal<bool> data_rdy_sig;
   sc_signal<bool> rdy_sig;
+  sc_vector<sc_signal<bool> > core_memory_request_sig;
+  sc_vector<sc_signal<bool> > core_memory_accept_sig;
   //
   /*sc_signal<bool, SC_MANY_WRITERS> memory_rdy_sig;
   sc_signal<mem_addr, SC_MANY_WRITERS> memory_addr_sig;
@@ -30,7 +33,14 @@ public:
     m->addr(addr_sig);
     m->addr_v(addr_v_sig);
     m->addr_f(addr_f_sig);
-    m->addr_rdy(addr_rdy_sig);
+    m->data_rdy(data_rdy_sig);
+    core_memory_request_sig.init(CORE_NUM);
+    core_memory_accept_sig.init(CORE_NUM);
+    for (int i = 0; i < CORE_NUM; i++) {
+      m->core_memory_request[i](core_memory_request_sig[i]);
+      m->core_memory_accept[i](core_memory_accept_sig[i]);
+    }
+
   }
 
   void wait() {
@@ -44,13 +54,13 @@ public:
 
   void send_addr(const mem_addr addr) {
     std::cout << sc_time_stamp() << std::endl;
-    // Make sure the memory unit is ready to receive a new address
-    while(rdy_sig == false) {
-      wait();
-    }
     addr_v_sig = true;
     addr_sig = addr;
+    core_memory_request_sig[0] = true;
     wait();
+    while(core_memory_accept_sig[0] != true) {
+      wait();
+    }
     // Make sure the address is read by memory unit
     while (addr_f_sig != true) {
       wait();
@@ -58,7 +68,7 @@ public:
     addr_v_sig = false;
     wait();
     // wait until address data is read
-    while(addr_rdy_sig == false) {
+    while(data_rdy_sig == false) {
       wait();
     }
     std::cout << sc_time_stamp() << std::endl;
@@ -66,6 +76,8 @@ public:
 
   void run() {
     mem_addr addr = (mem_addr)90;
+    send_addr(addr);
+    addr = (mem_addr)99;
     send_addr(addr);
     sc_stop();
   }

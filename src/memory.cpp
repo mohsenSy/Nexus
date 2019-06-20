@@ -11,11 +11,19 @@ void memory::do_fetch() {
   addr_f.write(false);
 
   // no data is ready on output
-  addr_rdy.write(false);
+  data_rdy.write(false);
+  for(int i = 0; i < CORE_NUM; i++) {
+    core_memory_accept[i].write(false);
+  }
 
   while (true) {
     // Check if address input is valid?
-    if (addr_v.read()) {
+    for (int i = 0; i < CORE_NUM; i++) {
+      if (core_memory_request[i].read()) {
+        core_memory_accept[i].write(true);
+        while(!addr_v.read()) {
+          wait();
+        }
         mem_addr a = addr.read();
         //PRINTL("Reading input %d", a);
         addr_f.write(true);
@@ -28,12 +36,15 @@ void memory::do_fetch() {
         }
         addr_f.write(false);
         rdy.write(true);
-        addr_rdy.write(true);
+        data_rdy.write(true);
         wait();
         Stats::inc_memory_cycles();
-        //PRINTL("Finished reading input %d", a);
+      }
+      data_rdy.write(false);
+      core_memory_accept[i].write(false);
+      wait();
     }
-    addr_rdy.write(false);
+    data_rdy.write(false);
     wait();
   }
 }

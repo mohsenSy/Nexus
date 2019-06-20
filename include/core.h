@@ -34,7 +34,9 @@ SC_MODULE(core) {
   sc_out<bool> memory_addr_v;
   sc_in<bool> memory_addr_f;
   sc_in<bool> memory_rdy;
-  sc_in<bool> memory_addr_rdy;
+  sc_in<bool> memory_data_rdy;
+  sc_out<bool> memory_request;
+  sc_in<bool> memory_accept;
 
   execute* ex;
   sc_signal<bool> rdy_sig;
@@ -70,6 +72,7 @@ SC_MODULE(core) {
   SC_CTOR(core): taskFifo(BUFFER_DEPTH)   {
     rdy.initialize(true);
     t_out_v.initialize(false);
+    memory_request.initialize(false);
     previous_task.id = 0;
     mem_cycles = 0;
     num_tasks = 0;

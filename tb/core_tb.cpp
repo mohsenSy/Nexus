@@ -19,7 +19,11 @@ public:
   sc_signal<mem_addr, SC_MANY_WRITERS> memory_addr_sig;
   sc_signal<bool, SC_MANY_WRITERS> memory_addr_v_sig;
   sc_signal<bool, SC_MANY_WRITERS> memory_addr_f_sig;
-  sc_signal<bool, SC_MANY_WRITERS> memory_addr_rdy_sig;
+  sc_signal<bool, SC_MANY_WRITERS> memory_data_rdy_sig;
+  sc_signal<bool> memory_request_sig;
+  sc_signal<bool> memory_accept_sig;
+  sc_vector<sc_signal<bool> > request_sigs;
+  sc_vector<sc_signal<bool> > accept_sigs;
 
   memory *m;
   core *c;
@@ -32,7 +36,15 @@ public:
     m->addr(memory_addr_sig);
     m->addr_v(memory_addr_v_sig);
     m->addr_f(memory_addr_f_sig);
-    m->addr_rdy(memory_addr_rdy_sig);
+    m->data_rdy(memory_data_rdy_sig);
+    m->core_memory_request[0](memory_request_sig);
+    m->core_memory_accept[0](memory_accept_sig);
+    request_sigs.init(CORE_NUM-1);
+    accept_sigs.init(CORE_NUM-1);
+    for (int i = 1; i < CORE_NUM; i++) {
+      m->core_memory_request[i](request_sigs[i-1]);
+      m->core_memory_accept[i](accept_sigs[i-1]);
+    }
 
     c = new core(name);
     c->clk(clock);
@@ -50,7 +62,10 @@ public:
     c->memory_addr(memory_addr_sig);
     c->memory_addr_v(memory_addr_v_sig);
     c->memory_addr_f(memory_addr_f_sig);
-    c->memory_addr_rdy(memory_addr_rdy_sig);
+    c->memory_data_rdy(memory_data_rdy_sig);
+    c->memory_request(memory_request_sig);
+    c->memory_accept(memory_accept_sig);
+
   }
 
   void wait() {
@@ -66,7 +81,6 @@ public:
     // Make sure the core unit is ready to receive a new task
     while(rdy_sig == false) {
       wait();
-      std::cout << sc_time_stamp() << " : Waiting for core to be ready" << std::endl;
     }
     t_in_v_sig = true;
     t_in_sig = t;
@@ -99,7 +113,7 @@ public:
 int sc_main(int argc, char **argv) {
 
   coreHelper *cH = new coreHelper("core1");
-  std::string fileName = "temp.csv";
+  std::string fileName = "m.csv";
   std::vector<task> tasks;
   read_tasks(fileName, &tasks);
   cH->run(tasks);

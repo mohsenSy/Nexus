@@ -34,25 +34,20 @@ void core::handle_finished(void) {
 }
 
 void core::fetch_input(mem_addr addr) {
-  // Wait until memory controller is ready
-  while(memory_rdy.read() != true) {
-    mem_cycles+=2;
+  memory_request.write(true);
+  while(memory_accept == false) {
     wait();
   }
-  memory_mutex.lock();
-  // Send address to memory controller
   memory_addr.write(addr);
   memory_addr_v.write(true);
-  mem_cycles+=2;
-  wait();
-  // Wait until address data is ready
-  while(memory_addr_rdy.read() == false) {
-    mem_cycles+=2;
+  while(memory_addr_f == false) {
     wait();
   }
-  memory_addr_v = false;
+  while(memory_data_rdy.read() == false) {
+    wait();
+  }
+  memory_request.write(false);
   wait();
-  memory_mutex.unlock();
 }
 
 void core::send_task(void) {

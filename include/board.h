@@ -33,7 +33,9 @@ SC_MODULE(board) {
   sc_signal<mem_addr, SC_MANY_WRITERS> memory_addr_sig;
   sc_signal<bool, SC_MANY_WRITERS> memory_addr_v_sig;
   sc_signal<bool, SC_MANY_WRITERS> memory_addr_f_sig;
-  sc_signal<bool, SC_MANY_WRITERS> memory_addr_rdy_sig;
+  sc_signal<bool, SC_MANY_WRITERS> memory_data_rdy_sig;
+  sc_vector<sc_signal<bool> > memory_request_sigs;
+  sc_vector<sc_signal<bool> > memory_accept_sigs;
 
   task previous_task;
   sc_fifo<task> taskFifo;
@@ -56,7 +58,13 @@ SC_MODULE(board) {
     mem->addr(memory_addr_sig);
     mem->addr_f(memory_addr_f_sig);
     mem->addr_v(memory_addr_v_sig);
-    mem->addr_rdy(memory_addr_rdy_sig);
+    mem->data_rdy(memory_data_rdy_sig);
+    memory_request_sigs.init(CORE_NUM);
+    memory_accept_sigs.init(CORE_NUM);
+    for(int i = 0; i < CORE_NUM; i++) {
+      mem->core_memory_request[i](memory_request_sigs[i]);
+      mem->core_memory_accept[i](memory_accept_sigs[i]);
+    }
 
     // initialize the task FIFO
     sc_fifo<task> taskFifo (TASK_NUM);
@@ -83,7 +91,9 @@ SC_MODULE(board) {
       cores[i].memory_addr(memory_addr_sig);
       cores[i].memory_addr_v(memory_addr_v_sig);
       cores[i].memory_addr_f(memory_addr_f_sig);
-      cores[i].memory_addr_rdy(memory_addr_rdy_sig);
+      cores[i].memory_data_rdy(memory_data_rdy_sig);
+      cores[i].memory_request(memory_request_sigs[i]);
+      cores[i].memory_accept(memory_accept_sigs[i]);
     }
   }
 };
