@@ -59,6 +59,9 @@ public:
   }
 
   void run(const std::vector<task> tasks) {
+    sc_trace_file *wf = sc_create_vcd_trace_file("execute");
+    sc_trace(wf, t_in_sig, "task input");
+    sc_trace(wf, t_in_v_sig, "task input valid");
     for(std::vector<task>::const_iterator iter = tasks.begin(); iter != tasks.end(); ++iter) {
       t_out_f_sig = false;
       wait();
@@ -75,6 +78,7 @@ public:
       wait();
     }
     sc_stop();
+    sc_close_vcd_trace_file(wf);
   }
 
 };

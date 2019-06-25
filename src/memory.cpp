@@ -29,16 +29,13 @@ void memory::do_fetch() {
         addr_f.write(true);
         rdy.write(false);
         wait();
-        Stats::inc_memory_cycles();
         for (int i = 0; i < MEM_FETCH_TIME; i++) {
           wait();
-          Stats::inc_memory_cycles();
         }
         addr_f.write(false);
         rdy.write(true);
         data_rdy.write(true);
         wait();
-        Stats::inc_memory_cycles();
       }
       data_rdy.write(false);
       core_memory_accept[i].write(false);

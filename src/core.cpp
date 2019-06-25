@@ -36,17 +36,21 @@ void core::handle_finished(void) {
 void core::fetch_input(mem_addr addr) {
   memory_request.write(true);
   while(memory_accept == false) {
+    Stats::inc_memory_cycles();
     wait();
   }
   memory_addr.write(addr);
   memory_addr_v.write(true);
   while(memory_addr_f == false) {
+    Stats::inc_memory_cycles();
     wait();
   }
   while(memory_data_rdy.read() == false) {
+    Stats::inc_memory_cycles();
     wait();
   }
   memory_request.write(false);
+  Stats::inc_memory_cycles();
   wait();
 }
 
