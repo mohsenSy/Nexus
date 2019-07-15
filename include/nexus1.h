@@ -38,6 +38,10 @@ namespace nexus1 {
         return tasks.empty();
       }
 
+      int get_size() {
+        return size;
+      }
+
       void print() {
         for(int i = 0; i < tasks.size(); i++) {
           if (i == 0) {
@@ -53,10 +57,6 @@ namespace nexus1 {
       mem_addr addr;
       KickOfList kick_of_list;
     public:
-      ProducersTableEntry(mem_addr addr) {
-        this->addr = addr;
-        kick_of_list = KickOfList();
-      }
       ProducersTableEntry(mem_addr addr, task t) {
         this->addr = addr;
         kick_of_list = KickOfList();
@@ -101,7 +101,11 @@ namespace nexus1 {
         if (pte != nullptr) {
           return pte->add_task(t);
         }
-        return false;
+        pte = new ProducersTableEntry(addr, t);
+        return add_entry(pte, t.id);
+      }
+      void print() {
+        print_entries();
       }
   };
 
@@ -111,6 +115,11 @@ namespace nexus1 {
       int deps;
       KickOfList kick_of_list;
     public:
+      ConsumersTableEntry(mem_addr addr) {
+        this->addr = addr;
+        this->deps = 1;
+        this->kick_of_list = KickOfList();
+      }
       ConsumersTableEntry(mem_addr addr, task t) {
         this->addr = addr;
         this->deps = 1;
@@ -130,12 +139,8 @@ namespace nexus1 {
         return deps;
       }
 
-      bool inc_deps(int i = 1) {
-        if (kick_of_list.empty()) {
-          this->deps += i;
-          return true;
-        }
-        return false;
+      void inc_deps(int i = 1) {
+        this->deps += i;
       }
 
       bool add_task(task t) {
@@ -172,7 +177,17 @@ namespace nexus1 {
         if (cte != nullptr) {
           return cte->add_task(t);
         }
-        return false;
+        cte = new ConsumersTableEntry(addr, t);
+        return add_entry(cte, t.id);
+      }
+      bool add_addr(mem_addr addr) {
+        ConsumersTableEntry *cte = this->get_entry_for_addr(addr);
+        if (cte != nullptr) {
+          cte->inc_deps();
+          return true;
+        }
+        cte = new ConsumersTableEntry(addr);
+        return add_entry(cte, 0);
       }
       bool is_kick_of_list_empty(mem_addr addr) {
         ConsumersTableEntry *cte = this->get_entry_for_addr(addr);
@@ -180,6 +195,9 @@ namespace nexus1 {
           return cte->empty();
         }
         return true;
+      }
+      void print() {
+        print_entries();
       }
   };
 
