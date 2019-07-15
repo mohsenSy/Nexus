@@ -44,22 +44,22 @@ public:
     }
     t_in_v_sig = true;
     t_in_sig = t;
-    std::cout << "Sending task " << t.id << std::endl;
+    // std::cout << "Sending task " << t.id << std::endl;
     wait();
     // Make sure the task is read by core board
     while (t_in_f_sig != true) {
       wait();
     }
     t_in_v_sig = false;
-    std::cout << "Sent task with id " << t.id << std::endl;
+    // std::cout << "Sent task with id " << t.id << std::endl;
   }
 
   void run(const std::vector<task> tasks) {
     for(std::vector<task>::const_iterator iter = tasks.begin(); iter != tasks.end(); ++iter) {
-      std::cout<<iter->id<< std::endl;
+      // std::cout<<iter->id<< std::endl;
       send_task(*iter);
     }
-    std::cout << "Sent all tasks" << std::endl;
+    // std::cout << "Sent all tasks" << std::endl;
     int i = 0;
     while (i++ != 100000) {
       wait();

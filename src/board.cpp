@@ -46,7 +46,7 @@ void board::sendTask() {
         i = 0;
       }
     }
-    std::cout << sc_time_stamp() << " : " << rdy_sigs[i] << std::endl;
+    //std::cout << sc_time_stamp() << " : " << rdy_sigs[i] << std::endl;
     PRINTL("Sending task with id %d to core %d", t.id, i);
 
     // Send task to the chosen core

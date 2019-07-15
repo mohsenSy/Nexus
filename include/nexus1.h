@@ -111,10 +111,11 @@ namespace nexus1 {
       int deps;
       KickOfList kick_of_list;
     public:
-      ConsumersTableEntry(mem_addr addr) {
+      ConsumersTableEntry(mem_addr addr, task t) {
         this->addr = addr;
         this->deps = 1;
         this->kick_of_list = KickOfList();
+        this->kick_of_list.push(t);
       }
 
       mem_addr get_addr() {

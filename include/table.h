@@ -31,7 +31,7 @@ class TableEntry {
 
     TableEntry(int id, T *data) {
       this->id = id;
-      used = false;
+      used = true;
       this->data = data;
     }
     // Returns true when the entry is used and false otherwise
@@ -94,7 +94,7 @@ class Table {
       // Adds en to the array of entries
       // Find a valid entry
       for (int i = 0; i < count; i++) {
-        if (entries[i] == NULL) {
+        if (entries[i] == nullptr) {
           // Add a new Entry
           TableEntry<T> *te = new TableEntry<T>(id, en);
           te->set_used(true);

@@ -87,14 +87,16 @@ public:
       send_task(*iter);
     }
     #ifdef DEBUG
-    debug_sig.write(1);
+    debug_sig.write(4);
     wait();
-    debug_sig.write(2);
+    debug_sig.write(5);
+    wait();
+    debug_sig.write(6);
     wait();
     debug_sig.write(0);
     #endif
     //std::cout << "Sent all tasks" << std::endl;
-    int i = 0;
+    /*int i = 0;
     t_out_f_sig = true;
     while (i++ != 1000) {
       if (t_out_v_sig == true) {
@@ -113,12 +115,12 @@ public:
         t_f_in_v_sig = false;
         t_out_f_sig = true;
         wait();
-      }
+      }*/
       /*else {
         std::cout << "No task" << std::endl;
       }*/
       wait();
-    }
+    //}
     /*while (rdy_sig != true) {
       std::cout << "Waiting for rdy_sig" << std::endl;
       wait();
@@ -131,7 +133,7 @@ public:
 
 int sc_main(int argc, char **argv) {
   nexus1Helper *n1H = new nexus1Helper("nexus1");
-  std::string fileName = "m.csv";
+  std::string fileName = "nexus_tasks.csv";
   //cout << "Enter file name: ";
   //cin >> fileName;
   std::vector<task> tasks;
