@@ -303,6 +303,11 @@ namespace nexus1 {
     int calculate_deps(task*);
     void send_task();
 
+    int add_input_prod(mem_addr, task*);
+    int add_input_cons(mem_addr);
+    int add_output_cons(mem_addr, task*);
+    int add_output_prod(mem_addr, task*);
+
     void read_finished(); // Read finished tasks and delete them.
     //void delete_task(task&);
 

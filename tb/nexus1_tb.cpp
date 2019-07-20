@@ -86,6 +86,10 @@ public:
       //std::cout<<iter->id<< std::endl;
       send_task(*iter);
     }
+    int counter = 0;
+    while(counter++ < 1000) {
+      wait();
+    }
     #ifdef DEBUG
     debug_sig.write(4);
     wait();
