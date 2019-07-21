@@ -122,7 +122,7 @@ namespace nexus1 {
       }
       ConsumersTableEntry(mem_addr addr, task t) {
         this->addr = addr;
-        this->deps = 1;
+        this->deps = 0;
         this->kick_of_list = KickOfList();
         this->kick_of_list.push(t);
       }
@@ -304,7 +304,7 @@ namespace nexus1 {
     void send_task();
 
     int add_input_prod(mem_addr, task*);
-    int add_input_cons(mem_addr);
+    int add_input_cons(mem_addr, task*);
     int add_output_cons(mem_addr, task*);
     int add_output_prod(mem_addr, task*);
 

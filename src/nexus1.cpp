@@ -119,16 +119,28 @@ int nexus::add_input_prod(mem_addr input, task *t) {
   return 0;
 }
 
-int nexus::add_input_cons(mem_addr input) {
-  ConsumersTableEntry* ct = consumers_table->get_entry_for_addr(input);
-  if (ct != nullptr) {
-    ct->inc_deps();
-  }
-  else {
-    while(!consumers_table->add_addr(input)) {
-      wait();
+int nexus::add_input_cons(mem_addr input, task *t) {
+  ProducersTableEntry *pte = producers_table->get_entry_for_addr(input);
+  if (pte == nullptr) {
+    ConsumersTableEntry* ct = consumers_table->get_entry_for_addr(input);
+    if (ct != nullptr) {
+      ct->inc_deps();
+    }
+    else {
+      while(!consumers_table->add_addr(input)) {
+        wait();
+      }
     }
   }
+  else {
+    ConsumersTableEntry* ct = consumers_table->get_entry_for_addr(input);
+    if (ct != nullptr) {
+      while(!ct->add_task(*t)) {
+        wait();
+      }
+    }
+  }
+
   return 0;
 }
 
@@ -149,7 +161,7 @@ int nexus::add_output_prod(mem_addr output, task *t) {
 int nexus::add_output_cons(mem_addr output, task *t) {
   ConsumersTableEntry* ct = consumers_table->get_entry_for_addr(output);
   if (ct != nullptr) {
-    while(ct->add_task(*t)) {
+    while(!ct->add_task(*t)) {
       wait();
     }
     return 1;
@@ -165,7 +177,7 @@ int nexus::calculate_deps(task* t) {
   for (int i = 0; i < t->input_args; i++) {
     // Process each input arg
     deps += add_input_prod(t->get_input_arg(i), t);
-    deps += add_input_cons(t->get_input_arg(i));
+    deps += add_input_cons(t->get_input_arg(i), t);
   }
 
   for (int i = 0; i < t->output_args; i++) {
