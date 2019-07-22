@@ -48,6 +48,8 @@ class TaskTable:
             self.index += 1
             return self.tasks[self.index-1]
         raise StopIteration
+    def __len__(self):
+        return len(self.tasks)
     def removeTask(self, id):
         task = self.getTask(id)
         self.tasks.remove(task)
@@ -74,9 +76,21 @@ class KickOfList:
     def __getitem__(self, index):
         if index >= 0 and index < len(self.tasks):
             return self.tasks[index]
+    def __iter__(self):
+        self.index = 0
+        return self
+    def __next__(self):
+        if self.index < len(self.tasks):
+            self.index += 1
+            return self.tasks[self.index-1]
+        raise StopIteration
     def remove(self, id):
+        if len(self.tasks) == 0:
+            return
         if self.tasks[0].id == id:
             del self.tasks[0]
+    def __len__(self):
+        return len(self.tasks)
 
 class ProducersTableEntry:
     def __init__(self, addr, task):
@@ -152,7 +166,7 @@ class ConsumersTable:
                 return entry
     def removeTask(self, id):
         for entry in self.entries:
-            if entry.deps == 0 and entry.list[0].id == id:
+            if entry.deps == 0 and len(entry.list) > 0 and entry.list[0].id == id:
                 entry.list.remove(id)
 
 class Nexus:
@@ -164,6 +178,7 @@ class Nexus:
         entry = self.prodTable.getEntry(input)
         if entry is not None:
             entry.add(task)
+            print("Added input address {} for task {} in prods".format(input, task))
             return 1
         return 0
     def addInputCons(self, input, task):
@@ -183,6 +198,7 @@ class Nexus:
         entry = self.prodTable.getEntry(output)
         if entry is not None:
             entry.add(task)
+            print("Added output address {} for task {} in prods".format(output, task))
             return 1
         else:
             self.prodTable.add(ProducersTableEntry(output, task))
@@ -191,6 +207,7 @@ class Nexus:
         entry = self.consTable.getEntry(output)
         if entry is not None:
             entry.add(task)
+            print("Added output address {} for task {} in cons".format(output, task))
             return 1
         return 0
     def addTask(self, task):
@@ -204,10 +221,55 @@ class Nexus:
                 deps += self.addOutputCons(output, task)
                 deps += self.addOutputProd(output, task)
             taskEntry.deps = deps
+    def checkOutput(self, output):
+        print("Checking output {}".format(output))
+        entry = self.consTable.getEntry(output)
+        if entry is not None and len(entry.list) > 0 and entry.deps > 0:
+            print("decrease number of deps for address {}".format(output))
+            entry.deps -=1
+        else:
+            entry = self.prodTable.getEntry(output)
+            if entry is not None:
+                if len(entry.list) == 0:
+                    return
+                self.taskTable.getTask(entry.list[0].id).deps -= 1
+                print("Decrease number of deps for task {}".format(entry.list[0]))
+                first = True
+                for task in entry.list:
+                    if first:
+                        first = False
+                        continue
+                    if output in task.inputs:
+                        self.taskTable.getTask(task.id).deps -= 1
+                        print("Decrease number of deps for task {}".format(task))
+    def checkInput(self, input):
+        print("Checking input {}".format(input))
+        entry = self.consTable.getEntry(input)
+        if entry is not None and entry.deps > 0:
+            entry.deps -= 1
+            if entry.deps == 0 and len(entry.list) > 0:
+                self.taskTable.getTask(entry.list[0].id).deps -= 1
+            print("decrease number of deps for address {}".format(input))
+        else:
+            entry = self.prodTable.getEntry(input)
+            if entry is not None:
+                if len(entry.list) == 0:
+                    return
+                if input in entry.list[0].inputs:
+                    return
+                self.taskTable.getTask(entry.list[0].id).deps -= 1
+                print("Decrease number of deps for task {}".format(entry.list[0]))
     def removeTask(self, id):
+        task = self.taskTable.getTask(id).task
+        inputs = task.inputs
+        outputs = task.outputs
         self.taskTable.removeTask(id)
         self.prodTable.removeTask(id)
         self.consTable.removeTask(id)
+        for output in outputs:
+            self.checkOutput(output)
+        for input in inputs:
+            self.checkInput(input)
     def dump(self):
         print("Dumping task table")
         self.taskTable.dump()
@@ -232,8 +294,18 @@ def main():
     #list = KickOfList(1)
     #prodTable = ProducersTable(10)
     #consTable = ConsumersTable(10)
-    nexus.removeTask(6)
     nexus.dump()
+    tasks = [task.task for task in nexus.taskTable]
+    for task in tasks:
+        if nexus.taskTable.getTask(task.id).deps == 0:
+            print("removing task {}".format(task))
+            nexus.removeTask(task.id)
+            print("+++++++++++++++++++")
+            nexus.taskTable.dump()
+            nexus.prodTable.dump()
+            nexus.consTable.dump()
+            print("--------------------")
+    #nexus.dump()
 
 if __name__ == '__main__':
     import os
