@@ -79,6 +79,21 @@ public:
     //std::cout << "Sent task with id " << t.id << std::endl;
   }
 
+  void finish_task(const std::vector<task> tasks, const int id) {
+    for(std::vector<task>::const_iterator iter = tasks.begin(); iter != tasks.end(); ++iter) {
+      //std::cout<<iter->id<< std::endl;
+      if (iter->id == id) {
+        t_f_in_v_sig = true;
+        t_f_in_sig = *iter;
+        do {
+          wait();
+        } while(t_f_in_f_sig != true);
+        t_f_in_v_sig = true;
+        wait();
+      }
+    }
+  }
+
   void run(const std::vector<task> tasks) {
     t_out_f_sig = false;
     t_f_in_v_sig = false;
@@ -86,6 +101,7 @@ public:
       //std::cout<<iter->id<< std::endl;
       send_task(*iter);
     }
+    finish_task(tasks, 3);
     int counter = 0;
     while(counter++ < 1000) {
       wait();

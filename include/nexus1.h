@@ -102,7 +102,7 @@ namespace nexus1 {
           return pte->add_task(t);
         }
         pte = new ProducersTableEntry(addr, t);
-        return add_entry(pte, t.id);
+        return add_entry(pte, *(int *)&addr);
       }
       void print() {
         print_entries();
@@ -178,7 +178,7 @@ namespace nexus1 {
           return cte->add_task(t);
         }
         cte = new ConsumersTableEntry(addr, t);
-        return add_entry(cte, t.id);
+        return add_entry(cte, *(int *)&addr);
       }
       bool add_addr(mem_addr addr) {
         ConsumersTableEntry *cte = this->get_entry_for_addr(addr);
@@ -187,7 +187,7 @@ namespace nexus1 {
           return true;
         }
         cte = new ConsumersTableEntry(addr);
-        return add_entry(cte, 0);
+        return add_entry(cte, *(int *)&addr);
       }
       bool is_kick_of_list_empty(mem_addr addr) {
         ConsumersTableEntry *cte = this->get_entry_for_addr(addr);
@@ -243,6 +243,9 @@ namespace nexus1 {
   class TaskTable : public Table<TaskTableEntry> {
     public:
       TaskTable(int count) : Table<TaskTableEntry>(count) {}
+      void delete_task(int id) {
+        delete_entry(id);
+      }
   };
 
   class TaskPoolEntry {
