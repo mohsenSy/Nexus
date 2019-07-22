@@ -239,6 +239,8 @@ void nexus::read_finished() {
         previous_f_task = t;
         PRINTL("Finished task %d", t.id);
         task_table->delete_task(t.id);
+        producers_table->delete_task(t.id);
+        consumers_table->delete_task(t.id);
         t_f_in_f.write(true);
         wait();
         // Now delete task from all tables

@@ -101,7 +101,7 @@ public:
       //std::cout<<iter->id<< std::endl;
       send_task(*iter);
     }
-    finish_task(tasks, 3);
+    finish_task(tasks, 1);
     int counter = 0;
     while(counter++ < 1000) {
       wait();

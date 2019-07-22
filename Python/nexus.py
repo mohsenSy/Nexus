@@ -48,6 +48,9 @@ class TaskTable:
             self.index += 1
             return self.tasks[self.index-1]
         raise StopIteration
+    def removeTask(self, id):
+        task = self.getTask(id)
+        self.tasks.remove(task)
 
 class KickOfList:
     def __init__(self, size):
@@ -68,6 +71,12 @@ class KickOfList:
             st += str(task) + ","
         st += ")"
         return st
+    def __getitem__(self, index):
+        if index >= 0 and index < len(self.tasks):
+            return self.tasks[index]
+    def remove(self, id):
+        if self.tasks[0].id == id:
+            del self.tasks[0]
 
 class ProducersTableEntry:
     def __init__(self, addr, task):
@@ -101,6 +110,9 @@ class ProducersTable:
         for entry in self.entries:
             if entry.addr == address:
                 return entry
+    def removeTask(self, id):
+        for entry in self.entries:
+            entry.list.remove(id)
 
 class ConsumersTableEntry:
     def __init__(self, addr):
@@ -138,6 +150,10 @@ class ConsumersTable:
         for entry in self.entries:
             if entry.addr == address:
                 return entry
+    def removeTask(self, id):
+        for entry in self.entries:
+            if entry.deps == 0 and entry.list[0].id == id:
+                entry.list.remove(id)
 
 class Nexus:
     def __init__(self):
@@ -187,8 +203,11 @@ class Nexus:
             for output in task.outputs:
                 deps += self.addOutputCons(output, task)
                 deps += self.addOutputProd(output, task)
-            print("deps is {}".format(deps))
             taskEntry.deps = deps
+    def removeTask(self, id):
+        self.taskTable.removeTask(id)
+        self.prodTable.removeTask(id)
+        self.consTable.removeTask(id)
     def dump(self):
         print("Dumping task table")
         self.taskTable.dump()
@@ -213,7 +232,10 @@ def main():
     #list = KickOfList(1)
     #prodTable = ProducersTable(10)
     #consTable = ConsumersTable(10)
+    nexus.removeTask(6)
     nexus.dump()
 
 if __name__ == '__main__':
+    import os
+    os.system("clear")
     main()

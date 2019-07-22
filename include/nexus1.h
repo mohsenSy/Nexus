@@ -34,6 +34,13 @@ namespace nexus1 {
         }
       }
 
+      void delete_task(int id) {
+        if (tasks[0].id == id) {
+          tasks.erase(tasks.begin());
+          size--;
+        }
+      }
+
       bool empty() {
         return tasks.empty();
       }
@@ -79,6 +86,10 @@ namespace nexus1 {
         kick_of_list.pop();
       }
 
+      void delete_task(int id) {
+        kick_of_list.delete_task(id);
+      }
+
       void print() {
         std::cout << "addr: " << addr << std::endl;
         kick_of_list.print();
@@ -103,6 +114,14 @@ namespace nexus1 {
         }
         pte = new ProducersTableEntry(addr, t);
         return add_entry(pte, *(int *)&addr);
+      }
+      void delete_task(int id) {
+        for (int i = 0; i < count; i++) {
+          if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data()) {
+            ProducersTableEntry* pte = entries[i]->get_data();
+            pte->delete_task(id);
+          }
+        }
       }
       void print() {
         print_entries();
@@ -155,6 +174,12 @@ namespace nexus1 {
         kick_of_list.pop();
       }
 
+      void delete_task(int id) {
+        if (this->deps == 0) {
+          kick_of_list.delete_task(id);
+        }
+      }
+
       void print() {
         std::cout << "addr: " << addr << " deps: " << deps << std::endl;
         kick_of_list.print();
@@ -188,6 +213,15 @@ namespace nexus1 {
         }
         cte = new ConsumersTableEntry(addr);
         return add_entry(cte, *(int *)&addr);
+      }
+
+      void delete_task(int id) {
+        for (int i = 0; i < count; i++) {
+          if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data()) {
+            ConsumersTableEntry* cte = entries[i]->get_data();
+            cte->delete_task(id);
+          }
+        }
       }
       bool is_kick_of_list_empty(mem_addr addr) {
         ConsumersTableEntry *cte = this->get_entry_for_addr(addr);
