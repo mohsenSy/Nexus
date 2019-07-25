@@ -35,6 +35,9 @@ namespace nexus1 {
       }
 
       void delete_task(int id) {
+        if (tasks.empty()) {
+          return;
+        }
         if (tasks[0].id == id) {
           tasks.erase(tasks.begin());
           size--;
@@ -47,6 +50,13 @@ namespace nexus1 {
 
       int get_size() {
         return size;
+      }
+
+      task *get_task(int index) {
+        if (index >= 0 && index < size) {
+          return &tasks[index];
+        }
+        return nullptr;
       }
 
       void print() {
@@ -86,8 +96,20 @@ namespace nexus1 {
         kick_of_list.pop();
       }
 
+      bool empty() {
+        return kick_of_list.empty();
+      }
+
+      task get_task(int index) {
+        return *kick_of_list.get_task(index);
+      }
+
       void delete_task(int id) {
         kick_of_list.delete_task(id);
+      }
+
+      int size() {
+        return kick_of_list.get_size();
       }
 
       void print() {
@@ -161,6 +183,9 @@ namespace nexus1 {
       void inc_deps(int i = 1) {
         this->deps += i;
       }
+      void dec_deps(int i = 1) {
+        this->deps -= i;
+      }
 
       bool add_task(task t) {
         return kick_of_list.push(t);
@@ -179,6 +204,11 @@ namespace nexus1 {
           kick_of_list.delete_task(id);
         }
       }
+
+      task get_task(int index) {
+        return *kick_of_list.get_task(index);
+      }
+
 
       void print() {
         std::cout << "addr: " << addr << " deps: " << deps << std::endl;
@@ -266,6 +296,9 @@ namespace nexus1 {
       void set_deps(int deps) {
         this->deps = deps;
       }
+      void dec_deps(int i = 1) {
+        this->deps -= i;
+      }
       bool is_ready() {
         return this->deps == 0;
       }
@@ -277,6 +310,20 @@ namespace nexus1 {
   class TaskTable : public Table<TaskTableEntry> {
     public:
       TaskTable(int count) : Table<TaskTableEntry>(count) {}
+      task get_task(int id) {
+        for (int i = 0; i < count; i++) {
+          if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data() && entries[i]->get_data()->get_task().id == id) {
+            return entries[i]->get_data()->get_task();
+          }
+        }
+      }
+      void dec_deps(int id) {
+        for (int i = 0; i < count; i++) {
+          if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data() && entries[i]->get_data()->get_task().id == id) {
+            entries[i]->get_data()->dec_deps();
+          }
+        }
+      }
       void delete_task(int id) {
         delete_entry(id);
       }
@@ -346,6 +393,10 @@ namespace nexus1 {
     int add_input_cons(mem_addr, task*);
     int add_output_cons(mem_addr, task*);
     int add_output_prod(mem_addr, task*);
+    void check_output(mem_addr);
+    void check_input(mem_addr);
+    bool check_task_input(task, mem_addr);
+    bool check_task_output(task, mem_addr);
     void schedule_tasks();
     void send_ready_task();
 

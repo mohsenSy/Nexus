@@ -234,10 +234,90 @@ int nexus::calculate_deps(task* t) {
   }
 }*/
 
+bool nexus::check_task_input(task t, mem_addr addr) {
+  for (int i = 0; i < t.input_args; i++) {
+    if(t.get_input_arg(i) == addr) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool nexus::check_task_output(task t, mem_addr addr) {
+  for (int i = 0; i < t.output_args; i++) {
+    if(t.get_output_arg(i) == addr) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void nexus::check_output(mem_addr addr) {
+  PRINTL("Checking output %d", addr);
+  ConsumersTableEntry *cte = consumers_table->get_entry_for_addr(addr);
+  if (cte && !cte->empty() && cte->get_deps() > 0) {
+    cte->dec_deps();
+  }
+  else {
+    ProducersTableEntry *pte = producers_table->get_entry_for_addr(addr);
+    if (pte) {
+      if (pte->empty()) {
+        return;
+      }
+      task t = pte->get_task(0);
+      task_table->dec_deps(t.id);
+      PRINTL("Decrease number of deps for task %d", t.id);
+      for (int i = 1; i < pte->size(); i++) {
+        t = pte->get_task(i);
+        if (check_task_input(t, addr)) {
+          task_table->dec_deps(t.id);
+          PRINTL("Decrease number of deps for task %d", t.id);
+        }
+      }
+    }
+  }
+}
+
+void nexus::check_input(mem_addr addr) {
+  PRINTL("Checking input %d", addr);
+  task t;
+  ConsumersTableEntry *cte = consumers_table->get_entry_for_addr(addr);
+  if (cte && cte->get_deps() > 0) {
+    cte->dec_deps();
+    if (cte->get_deps() == 0 && !cte->empty()) {
+      t = cte->get_task(0);
+      task_table->dec_deps(t.id);
+      PRINTL("Decrease number of deps for task %d", t.id);
+    }
+  }
+  else {
+    ProducersTableEntry *pte = producers_table->get_entry_for_addr(addr);
+    if (pte) {
+      if (pte->empty()) {
+        return;
+      }
+      if (check_task_input(pte->get_task(0), addr)) {
+        return;
+      }
+      t = pte->get_task(0);
+      task_table->dec_deps(t.id);
+      PRINTL("Decrease number of deps for task %d", t.id);
+    }
+  }
+}
+
 void nexus::delete_task(task *t) {
-  task_table->delete_task(t->id);
+  task t_to_delete = task_table->get_task(t->id);
+  PRINTL("Deleteing task %d", t_to_delete.id);
   producers_table->delete_task(t->id);
   consumers_table->delete_task(t->id);
+  for (int i = 0; i < t->output_args; i++) {
+    check_output(t->get_output_arg(i));
+  }
+  for (int i = 0; i < t->input_args; i++) {
+    check_input(t->get_input_arg(i));
+  }
+  task_table->delete_task(t->id);
 }
 
 void nexus::schedule_tasks() {
