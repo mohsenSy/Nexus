@@ -23,11 +23,13 @@ void core::handle_finished(void) {
       Stats::inc_core_finished_tasks_num();
       t_out_f_sig = false;
       dec_tasks_num();
-      // This will be added when Nexus is implemented, right now no other unit reads the finished task.
-      /*while(t_out_f.read() == false) {
+      t_out_v.write(true);
+      t_out.write(t);
+      while(t_out_f.read() == false) {
         // Wait for the finished task to be read by the other unit
         wait();
-      }*/
+      }
+      t_out_v.write(false);
     }
     wait();
   }

@@ -94,10 +94,17 @@ public:
   }
 
   void run(const std::vector<task> tasks) {
-    t_out_f_sig = true;
+    t_out_f_sig = false;
     for(std::vector<task>::const_iterator iter = tasks.begin(); iter != tasks.end(); ++iter) {
       //std::cout<<iter->id<< std::endl;
       send_task(*iter);
+      while(!t_out_v_sig.read()) {
+        wait();
+      }
+      task t = t_out_sig;
+      std::cout << "Task " << t.id << " finished" << std::endl;
+      t_out_f_sig.write(true);
+      wait();
     }
     int i = 0;
     while (i++ != 1000) {
@@ -113,7 +120,7 @@ public:
 int sc_main(int argc, char **argv) {
 
   coreHelper *cH = new coreHelper("core1");
-  std::string fileName = "m.csv";
+  std::string fileName = "nexus_tasks.csv";
   std::vector<task> tasks;
   read_tasks(fileName, &tasks);
   cH->run(tasks);
