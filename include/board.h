@@ -62,6 +62,9 @@ SC_MODULE(board) {
   void receiveTask();
   void sendTask();
 
+  void send_task_nexus(task);
+  void send_task_core(task);
+
   SC_CTOR(board) {
     SC_CTHREAD(receiveTask, clk.pos());
     //SC_THREAD(receiveTask);
