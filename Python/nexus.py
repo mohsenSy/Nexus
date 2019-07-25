@@ -218,8 +218,12 @@ class Nexus:
                 deps += self.addInputProd(input, task)
                 deps += self.addInputCons(input, task)
             for output in task.outputs:
-                deps += self.addOutputCons(output, task)
-                deps += self.addOutputProd(output, task)
+                outputDepsCons = self.addOutputCons(output, task)
+                outputDepsProd = self.addOutputProd(output, task)
+                if outputDepsCons == 0:
+                    deps += outputDepsProd
+                else:
+                    deps += outputDepsCons
             taskEntry.deps = deps
     def checkOutput(self, output):
         print("Checking output {}".format(output))

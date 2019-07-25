@@ -195,6 +195,7 @@ void nexus::send_task() {
     if (task_queue.nb_read(t)) {
       PRINTL("Can send task %d out", t.id);
       t_ready.write(true);
+
       while(t_out_f.read() == false) {
         wait();
       }
@@ -227,6 +228,12 @@ void nexus::schedule() {
 }
 */
 
+void nexus::delete_task(task *t) {
+  task_table->delete_task(t->id);
+  producers_table->delete_task(t->id);
+  consumers_table->delete_task(t->id);
+}
+
 void nexus::read_finished() {
   t_f_in_f.write(false);
 
@@ -238,9 +245,7 @@ void nexus::read_finished() {
       if (t != previous_f_task) {
         previous_f_task = t;
         PRINTL("Finished task %d", t.id);
-        task_table->delete_task(t.id);
-        producers_table->delete_task(t.id);
-        consumers_table->delete_task(t.id);
+        this->delete_task(&t);
         t_f_in_f.write(true);
         wait();
         // Now delete task from all tables

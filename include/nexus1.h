@@ -346,7 +346,7 @@ namespace nexus1 {
     int add_output_prod(mem_addr, task*);
 
     void read_finished(); // Read finished tasks and delete them.
-    //void delete_task(task&);
+    void delete_task(task*);
 
     SC_CTOR(nexus): in_buffer("in_buffer", NEXUS1_IN_BUFFER_DEPTH), task_queue("task_queue", NEXUS1_READY_QUEUE_DEPTH) {
       rdy.initialize(true);
