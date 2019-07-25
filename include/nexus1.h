@@ -335,7 +335,6 @@ namespace nexus1 {
     // Nexus1 threads
     void receive(); // Receive a new task and store it in receive buffer
     void load(); // Load a task from receive buffer to Task Pool and other tables
-    //void schedule(); // Find the next ready task for execution and send it to ready queue
     void add_to_task_table(task*);
     int calculate_deps(task*);
     void send_task();
@@ -344,6 +343,7 @@ namespace nexus1 {
     int add_input_cons(mem_addr, task*);
     int add_output_cons(mem_addr, task*);
     int add_output_prod(mem_addr, task*);
+    void schedule_tasks();
 
     void read_finished(); // Read finished tasks and delete them.
     void delete_task(task*);
