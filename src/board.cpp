@@ -70,6 +70,25 @@ void board::send_task_core(task t) {
   t_in_v_sigs[i] = false;
 }
 
+void board::send_ready_tasks() {
+  while(true) {
+    task t;
+    while(!read_tasks.nb_read(t)) {
+      wait();
+    }
+    PRINTL("Sending task %d to ready core", t.id);
+    send_task_core(t);
+    wait();
+  }
+}
+
+void board::read_ready_tasks() {
+  while(true) {
+    
+    wait();
+  }
+}
+
 void board::sendTask() {
   while (true) {
     // Read a task from FIFO

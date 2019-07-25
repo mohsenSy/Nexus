@@ -313,6 +313,9 @@ namespace nexus1 {
     sc_out<bool> t_f_in_f; // Finished reading finished task?
     sc_in<bool> t_f_in_v; // Finished task input valid?
     sc_out<bool> rdy; // Check if nexus is ready or not to receive tasks?
+    sc_out<task> t_ready_out;
+    sc_out<bool> t_ready_out_v;
+    sc_in<bool> t_ready_out_f;
 
     #ifdef DEBUG
     sc_in<int> debug;
@@ -344,6 +347,7 @@ namespace nexus1 {
     int add_output_cons(mem_addr, task*);
     int add_output_prod(mem_addr, task*);
     void schedule_tasks();
+    void send_ready_task();
 
     void read_finished(); // Read finished tasks and delete them.
     void delete_task(task*);
@@ -368,10 +372,10 @@ namespace nexus1 {
       PRINTL("new nexus 1 %s", name());
       SC_CTHREAD(receive, clk.pos());
       SC_CTHREAD(load, clk.pos());
-      SC_CTHREAD(send_task, clk.pos());
+      //SC_CTHREAD(send_task, clk.pos());
       //SC_CTHREAD(schedule, clk.pos());
       SC_CTHREAD(read_finished, clk.pos());
-
+      SC_CTHREAD(send_ready_task, clk.pos());
     }
   };
 };

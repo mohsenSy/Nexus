@@ -18,7 +18,9 @@ public:
   sc_signal<bool> t_out_v_sig;
   sc_signal<bool> t_out_f_sig;
   sc_signal<bool> rdy_sig;
-
+  sc_signal<task> t_ready_out_sig;
+  sc_signal<bool> t_ready_out_f_sig;
+  sc_signal<bool> t_ready_out_v_sig;
   #ifdef DEBUG
   sc_signal<int> debug_sig;
   #endif
@@ -44,6 +46,11 @@ public:
     n1->t_out_f(t_out_f_sig);
 
     n1->rdy(rdy_sig);
+
+    n1->t_ready_out(t_ready_out_sig);
+    n1->t_ready_out_f(t_ready_out_f_sig);
+    n1->t_ready_out_v(t_ready_out_v_sig);
+
 
     #ifdef DEBUG
     n1->debug(debug_sig);
@@ -91,15 +98,21 @@ public:
       wait();
     }
   }
-
   void run(const std::vector<task> tasks) {
     t_out_f_sig = false;
     t_f_in_v_sig = false;
+    t_ready_out_f_sig = false;
     for(std::vector<task>::const_iterator iter = tasks.begin(); iter != tasks.end(); ++iter) {
       //std::cout<<iter->id<< std::endl;
       send_task(*iter);
     }
-    //finish_tasks(tasks);
+    finish_tasks(tasks);
+    while(!t_ready_out_v_sig.read()) {
+      wait();
+      std::cout << "Wait for ready task " << std::endl;
+    }
+    task t = t_ready_out_sig.read();
+    std::cout << "task " << t.id << " is ready " << std::endl;
     int counter = 0;
     while(counter++ < 1000) {
       wait();

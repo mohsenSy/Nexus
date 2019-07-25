@@ -93,6 +93,23 @@ void nexus::load() {
   }
 }
 
+void nexus::send_ready_task() {
+  task t;
+  while(true) {
+    while (!task_queue.nb_read(t)) {
+      wait();
+    }
+    PRINTL("Sending ready task %d", t.id);
+    t_ready_out_v.write(true);
+    t_ready_out.write(t);
+    do {
+      wait();
+    }while(!t_ready_out_f.read());
+    t_ready_out_v.write(false);
+    wait();
+  }
+}
+
 void nexus::add_to_task_table(task* t) {
   TaskTableEntry* tte = new TaskTableEntry(*t);
   int deps = calculate_deps(t);
@@ -101,7 +118,9 @@ void nexus::add_to_task_table(task* t) {
   while(!task_table->add_entry(tte, t->id)) {
     wait();
   }
+  PRINTL("Task %d added to table", t->id);
   if (deps == 0) {
+    PRINTL("adding task %d to queue", t->id);
     while (!task_queue.nb_write(*t)) {
       wait();
     }
@@ -188,7 +207,7 @@ int nexus::calculate_deps(task* t) {
   return deps;
 }
 
-void nexus::send_task() {
+/*void nexus::send_task() {
   t_ready.write(false);
   while(true) {
     task t;
@@ -213,7 +232,7 @@ void nexus::send_task() {
     }
     wait();
   }
-}
+}*/
 
 void nexus::delete_task(task *t) {
   task_table->delete_task(t->id);

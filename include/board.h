@@ -58,9 +58,12 @@ SC_MODULE(board) {
 
   task previous_task;
   sc_fifo<task> taskFifo;
+  sc_fifo<task> ready_queue;
 
   void receiveTask();
   void sendTask();
+  void send_ready_tasks();
+  void read_ready_tasks();
 
   void send_task_nexus(task);
   void send_task_core(task);
@@ -70,6 +73,8 @@ SC_MODULE(board) {
     //SC_THREAD(receiveTask);
     //sensitive << clk;
     SC_CTHREAD(sendTask, clk.pos());
+    SC_CTHREAD(send_ready_tasks, clk.pos());
+    SC_CTHREAD(read_ready_tasks, clk.pos());
     //SC_THREAD(sendTask);
     //sensitive << clk;
     previous_task.id = 0;
@@ -113,6 +118,7 @@ SC_MODULE(board) {
 
     // initialize the task FIFO
     sc_fifo<task> taskFifo (TASK_NUM);
+    sc_fifo<task> ready_queue (READY_QUEUE_NUM);
     cores.init(CORE_NUM);
     t_in_sigs.init(CORE_NUM);
     t_in_v_sigs.init(CORE_NUM);
