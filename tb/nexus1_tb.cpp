@@ -106,7 +106,7 @@ public:
       //std::cout<<iter->id<< std::endl;
       send_task(*iter);
     }
-    finish_tasks(tasks);
+    //finish_tasks(tasks);
     while(!t_ready_out_v_sig.read()) {
       wait();
       std::cout << "Wait for ready task " << std::endl;

@@ -201,8 +201,14 @@ int nexus::calculate_deps(task* t) {
 
   for (int i = 0; i < t->output_args; i++) {
     // Process each output arg
-    deps += add_output_cons(t->get_output_arg(i), t);
-    deps += add_output_prod(t->get_output_arg(i), t);
+    int outputDepsCons = add_output_cons(t->get_output_arg(i), t);
+    int outputDepsProd = add_output_prod(t->get_output_arg(i), t);
+    if (outputDepsCons == 0) {
+      deps += outputDepsProd;
+    }
+    else {
+      deps += outputDepsCons;
+    }
   }
   return deps;
 }

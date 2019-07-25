@@ -52,6 +52,9 @@ SC_MODULE(board) {
   sc_signal<bool> t_out_v_sig;
   sc_signal<bool> t_out_f_sig;
   sc_signal<bool> rdy_sig;
+  sc_signal<task> t_ready_out_sig;
+  sc_signal<bool> t_ready_out_f_sig;
+  sc_signal<bool> t_ready_out_v_sig;
   #ifdef DEBUG
   sc_signal<int> debug_sig;
   #endif
@@ -111,6 +114,10 @@ SC_MODULE(board) {
     nex->t_out_f(t_out_f_sig);
 
     nex->rdy(rdy_sig);
+
+    nex->t_ready_out(t_ready_out_sig);
+    nex->t_ready_out_f(t_ready_out_f_sig);
+    nex->t_ready_out_v(t_ready_out_v_sig);
 
     #ifdef DEBUG
     nex->debug(debug_sig);

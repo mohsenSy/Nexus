@@ -73,7 +73,7 @@ void board::send_task_core(task t) {
 void board::send_ready_tasks() {
   while(true) {
     task t;
-    while(!read_tasks.nb_read(t)) {
+    while(!ready_queue.nb_read(t)) {
       wait();
     }
     PRINTL("Sending task %d to ready core", t.id);
@@ -84,7 +84,14 @@ void board::send_ready_tasks() {
 
 void board::read_ready_tasks() {
   while(true) {
-    
+    while(!t_ready_out_v_sig.read()) {
+      wait();
+    }
+    task t = t_ready_out_sig.read();
+    t_ready_out_f_sig.write(true);
+    while(!ready_queue.nb_write(t)) {
+      wait();
+    }
     wait();
   }
 }
