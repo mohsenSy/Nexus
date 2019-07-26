@@ -4,6 +4,32 @@
 #include <utils.h>
 #include <stats.h>
 
+void board::send_finished_nexus(task t) {
+  t_f_in_v_sig = true;
+  t_f_in_sig = t;
+  do {
+    wait();
+  }while(!t_f_in_f_sig);
+  t_f_in_v_sig = true;
+  wait();
+}
+
+void board::read_finished() {
+  while(true) {
+    for (int i = 0; i < CORE_NUM; i++) {
+      if (t_out_v_sigs[i].read()) {
+        task t = t_out_sigs[i].read();
+        PRINTL("Board got finished task %d", t.id);
+        t_out_f_sigs[i].write(true);
+        send_finished_nexus(t);
+        wait();
+        t_out_f_sigs[i].write(false);
+      }
+    }
+    wait();
+  }
+}
+
 void board::receiveTask() {
   rdy.write(true);
   t_in_f.write(false);
@@ -74,11 +100,13 @@ void board::send_ready_tasks() {
   while(true) {
     task t;
     while(!ready_queue.nb_read(t)) {
+      PRINTL("Wait for ready task in board", "");
       wait();
     }
     PRINTL("Sending task %d to ready core", t.id);
     send_task_core(t);
     wait();
+    PRINTL("Task %d was sent to core", t.id);
   }
 }
 
@@ -89,9 +117,11 @@ void board::read_ready_tasks() {
     }
     task t = t_ready_out_sig.read();
     t_ready_out_f_sig.write(true);
+    PRINTL("received ready task %d in board", t.id);
     while(!ready_queue.nb_write(t)) {
       wait();
     }
+    PRINTL("Ready task %d was written to queue", t.id);
     wait();
   }
 }

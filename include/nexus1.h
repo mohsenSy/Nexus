@@ -311,11 +311,22 @@ namespace nexus1 {
     public:
       TaskTable(int count) : Table<TaskTableEntry>(count) {}
       task get_task(int id) {
+        task t;
+        t.id = 0;
         for (int i = 0; i < count; i++) {
           if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data() && entries[i]->get_data()->get_task().id == id) {
             return entries[i]->get_data()->get_task();
           }
         }
+        return t;
+      }
+      TaskTableEntry* get_entry(int id) {
+        for (int i = 0; i < count; i++) {
+          if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data() && entries[i]->get_data()->get_task().id == id) {
+            return entries[i]->get_data();
+          }
+        }
+        return nullptr;
       }
       void dec_deps(int id) {
         for (int i = 0; i < count; i++) {
@@ -326,6 +337,9 @@ namespace nexus1 {
       }
       void delete_task(int id) {
         delete_entry(id);
+      }
+      int size() {
+        return count;
       }
   };
 

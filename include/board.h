@@ -65,11 +65,13 @@ SC_MODULE(board) {
 
   void receiveTask();
   void sendTask();
+  void read_finished();
   void send_ready_tasks();
   void read_ready_tasks();
 
   void send_task_nexus(task);
   void send_task_core(task);
+  void send_finished_nexus(task);
 
   SC_CTOR(board) {
     SC_CTHREAD(receiveTask, clk.pos());
@@ -78,6 +80,7 @@ SC_MODULE(board) {
     SC_CTHREAD(sendTask, clk.pos());
     SC_CTHREAD(send_ready_tasks, clk.pos());
     SC_CTHREAD(read_ready_tasks, clk.pos());
+    SC_CTHREAD(read_finished, clk.pos());
     //SC_THREAD(sendTask);
     //sensitive << clk;
     previous_task.id = 0;
@@ -144,6 +147,7 @@ SC_MODULE(board) {
       cores[i].t_out(t_out_sigs[i]);
       cores[i].t_out_v(t_out_v_sigs[i]);
       cores[i].t_out_f(t_out_f_sigs[i]);
+      t_out_f_sigs[i].write(false);
       cores[i].rdy(rdy_sigs[i]);
       cores[i].memory_rdy(memory_rdy_sig);
       cores[i].memory_addr(memory_addr_sig);

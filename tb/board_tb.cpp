@@ -61,7 +61,7 @@ public:
     }
     // std::cout << "Sent all tasks" << std::endl;
     int i = 0;
-    while (i++ != 100000) {
+    while (i++ != 1000000) {
       wait();
     }
     /*while (rdy_sig != true) {

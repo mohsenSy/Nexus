@@ -328,6 +328,17 @@ void nexus::delete_task(task *t) {
 
 void nexus::schedule_tasks() {
   // Here I loop through all tasks and send ready ones
+  for (int i = 0; i < task_table->size(); i++) {
+    TaskTableEntry* tte = task_table->get_entry(i);
+    if (tte) {
+      PRINTL("Checing task %d", tte->get_task().id);
+      if (tte->get_deps() == 0) {
+        while(!task_queue.nb_write(tte->get_task())) {
+          wait();
+        }
+      }
+    }
+  }
 }
 
 void nexus::read_finished() {
