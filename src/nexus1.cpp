@@ -106,6 +106,7 @@ void nexus::send_ready_task() {
       wait();
     }while(!t_ready_out_f.read());
     t_ready_out_v.write(false);
+    task_table->set_task_sent(t);
     wait();
   }
 }
@@ -332,7 +333,7 @@ void nexus::schedule_tasks() {
     TaskTableEntry* tte = task_table->get_entry(i);
     if (tte) {
       PRINTL("Checing task %d", tte->get_task().id);
-      if (tte->get_deps() == 0) {
+      if (tte->get_deps() == 0 && tte->get_status() != TaskStatus::SENT) {
         while(!task_queue.nb_write(tte->get_task())) {
           wait();
         }

@@ -335,6 +335,10 @@ namespace nexus1 {
           }
         }
       }
+      void set_task_sent(task t) {
+        TaskTableEntry *tte = get_entry(t.id);
+        tte->set_status(TaskStatus::SENT);
+      }
       void delete_task(int id) {
         delete_entry(id);
       }
