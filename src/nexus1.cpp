@@ -66,7 +66,7 @@ void nexus::receive() {
           rdy.write(false);
           wait();
         }
-        PRINTL("Nexus1 : Received new task %d", t.id);
+        PRINTL("nexus::receive Received new task %d", t.id);
         rdy.write(true);
         t_in_f.write(true);
       }
@@ -82,15 +82,13 @@ void nexus::load() {
     while (!in_buffer.nb_read(*t)) {
       wait();
     }
-    PRINTL("Loading this task %d", t->id);
+    PRINTL("nexus::load: Adding task %d to task pool", t->id);
     TaskPoolEntry *tpe = new TaskPoolEntry(*t);
     while(!task_pool->add_entry(tpe, t->id)) {
-      PRINTL("Cannot add to task pool", "");
       wait();
     }
-    PRINTL("Task %d was added to task pool", t->id);
+    PRINTL("nexus::load: Task %d was added to task pool", t->id);
     add_to_task_table(t);
-    PRINTL("Added to task table", "");
     wait();
   }
 }
@@ -101,7 +99,7 @@ void nexus::send_ready_task() {
     while (!task_queue.nb_read(t)) {
       wait();
     }
-    PRINTL("Sending ready task %d", t.id);
+    PRINTL("nexus::send_ready_task: Sending ready task %d to board", t.id);
     t_ready_out_v.write(true);
     t_ready_out.write(t);
     do {
@@ -109,6 +107,7 @@ void nexus::send_ready_task() {
     }while(!t_ready_out_f.read());
     t_ready_out_v.write(false);
     task_table->set_task_sent(t);
+    PRINTL("nexus::send_ready_task: Task %d was sent to board", t.id);
     wait();
   }
 }
@@ -117,16 +116,17 @@ void nexus::add_to_task_table(task* t) {
   TaskTableEntry* tte = new TaskTableEntry(*t);
   int deps = calculate_deps(t);
   tte->set_deps(deps);
-  PRINTL("Task %d has %d deps count", t->id, tte->get_deps());
+  PRINTL("nexus::add_to_task_table: Task %d has %d deps count", t->id, tte->get_deps());
   while(!task_table->add_entry(tte, t->id)) {
     wait();
   }
-  PRINTL("Task %d added to table", t->id);
+  PRINTL("nexus::add_to_task_table: Task %d added to table", t->id);
   if (deps == 0) {
-    PRINTL("adding task %d to queue", t->id);
+    PRINTL("nexus::add_to_task_table: adding task %d to task queue", t->id);
     while (!task_queue.nb_write(*t)) {
       wait();
     }
+    PRINTL("nexus::add_to_task_table: Task %d was added to task queue", t->id);
   }
 }
 
@@ -216,33 +216,6 @@ int nexus::calculate_deps(task* t) {
   return deps;
 }
 
-/*void nexus::send_task() {
-  t_ready.write(false);
-  while(true) {
-    task t;
-    if (task_queue.nb_read(t)) {
-      PRINTL("Can send task %d out", t.id);
-      t_ready.write(true);
-
-      while(t_out_f.read() == false) {
-        wait();
-      }
-      t_out.write(t);
-      t_out_v.write(true);
-      wait();
-      while (t_out_f.read() == false) {
-        wait();
-      }
-      //task_table->set_sent(t);
-      t_out_v.write(false);
-    }
-    else {
-      t_ready.write(false);
-    }
-    wait();
-  }
-}*/
-
 bool nexus::check_task_input(task t, mem_addr addr) {
   for (int i = 0; i < t.input_args; i++) {
     if(t.get_input_arg(i) == addr) {
@@ -262,7 +235,6 @@ bool nexus::check_task_output(task t, mem_addr addr) {
 }
 
 void nexus::check_output(mem_addr addr) {
-  PRINTL("Checking output %d", addr);
   ConsumersTableEntry *cte = consumers_table->get_entry_for_addr(addr);
   if (cte && !cte->empty() && cte->get_deps() > 0) {
     cte->dec_deps();
@@ -275,12 +247,10 @@ void nexus::check_output(mem_addr addr) {
       }
       task t = pte->get_task(0);
       task_table->dec_deps(t.id);
-      PRINTL("Decrease number of deps for task %d", t.id);
       for (int i = 1; i < pte->size(); i++) {
         t = pte->get_task(i);
         if (check_task_input(t, addr)) {
           task_table->dec_deps(t.id);
-          PRINTL("Decrease number of deps for task %d", t.id);
         }
       }
     }
@@ -288,7 +258,6 @@ void nexus::check_output(mem_addr addr) {
 }
 
 void nexus::check_input(mem_addr addr) {
-  PRINTL("Checking input %d", addr);
   task t;
   ConsumersTableEntry *cte = consumers_table->get_entry_for_addr(addr);
   if (cte && cte->get_deps() > 0) {
@@ -296,7 +265,6 @@ void nexus::check_input(mem_addr addr) {
     if (cte->get_deps() == 0 && !cte->empty()) {
       t = cte->get_task(0);
       task_table->dec_deps(t.id);
-      PRINTL("Decrease number of deps for task %d", t.id);
     }
   }
   else {
@@ -310,14 +278,13 @@ void nexus::check_input(mem_addr addr) {
       }
       t = pte->get_task(0);
       task_table->dec_deps(t.id);
-      PRINTL("Decrease number of deps for task %d", t.id);
     }
   }
 }
 
 void nexus::delete_task(task *t) {
   task t_to_delete = task_table->get_task(t->id);
-  PRINTL("Deleteing task %d", t_to_delete.id);
+  PRINTL("nexus::delete_task: Deleteing task %d", t_to_delete.id);
   producers_table->delete_task(t->id);
   consumers_table->delete_task(t->id);
   for (int i = 0; i < t->output_args; i++) {
@@ -328,6 +295,7 @@ void nexus::delete_task(task *t) {
   }
   task_table->delete_task(t->id);
   task_pool->delete_task(t->id);
+  PRINTL("nexus::delete_task: Task %d was deleted", t_to_delete.id);
 }
 
 void nexus::schedule_tasks() {
@@ -335,7 +303,6 @@ void nexus::schedule_tasks() {
   for (int i = 0; i < task_table->size(); i++) {
     TaskTableEntry* tte = task_table->get_entry(i);
     if (tte) {
-      PRINTL("Checing task %d", tte->get_task().id);
       if (tte->get_deps() == 0 && tte->get_status() != TaskStatus::SENT) {
         while(!task_queue.nb_write(tte->get_task())) {
           wait();
@@ -354,9 +321,8 @@ void nexus::read_finished() {
       task t = t_f_in.read();
       t_f_in_f.write(false);
       if (t != previous_f_task) {
-        PRINTL("New finished task is %d and previous one is %d", t.id, previous_f_task.id);
         previous_f_task = t;
-        PRINTL("Finished task %d", t.id);
+        PRINTL("nexus::read_finished: Finished task %d", t.id);
         this->delete_task(&t);
         this->schedule_tasks();
         t_f_in_f.write(true);
