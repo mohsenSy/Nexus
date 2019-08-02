@@ -7,11 +7,12 @@
 void board::send_finished_nexus(task t) {
   t_f_in_v_sig = true;
   t_f_in_sig = t;
+  PRINTL("board::send_finished_nexus: Sending finished task %d to Nexus", t.id);
   do {
     wait();
-    PRINTL("Wait for finished task to be read by nexus", "");
   }while(!t_f_in_f_sig);
-  t_f_in_v_sig = true;
+  PRINTL("board::send_finished_nexus: Finished task %d was sent to nexus", t.id);
+  t_f_in_v_sig = false;
   wait();
 }
 
@@ -20,7 +21,7 @@ void board::read_finished() {
     for (int i = 0; i < CORE_NUM; i++) {
       if (t_out_v_sigs[i].read()) {
         task t = t_out_sigs[i].read();
-        PRINTL("Board got finished task %d", t.id);
+        PRINTL("board::read_finished: finished task %d from core %d", t.id, i);
         t_out_f_sigs[i].write(true);
         send_finished_nexus(t);
         wait();
@@ -40,12 +41,15 @@ void board::receiveTask() {
     t_in_f.write(false);
     if(t_in_v.read() == true && t != previous_task) {
       previous_task = t;
+      PRINTL("board::receiveTask: Recived new task %d", t.id);
       while(!taskFifo.nb_write(t)) {
         // The task buffer is full and cannot receive new tasks
         rdy.write(false);
+        //PRINTL("Board task fifo is full", "");
         wait();
         Stats::inc_board_buffer_wait_cycles();
       }
+      PRINTL("board::receiveTask: Task %d was written to task fifo", t.id);
       rdy.write(true);
       t_in_f.write(true);
     }
@@ -56,18 +60,18 @@ void board::receiveTask() {
 void board::send_task_nexus(task t) {
   // Make sure the nexus unit is ready to receive a new task
   while(rdy_sig == false) {
-    cout << "Waiting for RDY" << std::endl;
     wait();
   }
-  //std::cout << "Sending task " << t.id << std::endl;
   t_in_v_sig = true;
   t_in_sig = t;
+  PRINTL("board::send_task_nexus: Sending task %d to nexus", t.id);
   wait();
-  // Make sure the task is read by core unit
+  // Make sure the task is read by nexus
   while (t_in_f_sig != true) {
     wait();
   }
-  //t_in_v_sig = false;
+  PRINTL("board::send_task_nexus: Task %d was sent to nexus", t.id);
+  t_in_v_sig = false;
   wait();
 }
 
@@ -76,14 +80,13 @@ void board::send_task_core(task t) {
   // Loop through the cores to find a ready one
   while( rdy_sigs[i] != true) {
     wait();
-    PRINTL("Waiting for core after %d", i);
+    PRINTL("board::send_task_core: Core %d is not ready", i);
     Stats::inc_core_wait_cycles();
     if (++i == CORE_NUM) {
       i = 0;
     }
   }
-  //std::cout << sc_time_stamp() << " : " << rdy_sigs[i] << std::endl;
-  PRINTL("Sending task with id %d to core %d", t.id, i);
+  PRINTL("board::send_task_core: Sending task with id %d to core %d", t.id, i);
 
   // Send task to the chosen core
   t_in_sigs[i] = t;
@@ -95,6 +98,7 @@ void board::send_task_core(task t) {
     //Stats::inc_core_wait_cycles();
     wait();
   }
+  PRINTL("board::send_task_core: Task %d was read by core %d", t.id, i);
   t_in_v_sigs[i] = false;
 }
 
@@ -104,22 +108,19 @@ void board::send_ready_tasks() {
     while(!ready_queue.nb_read(t)) {
       wait();
     }
-    PRINTL("Sending task %d to ready core", t.id);
     send_task_core(t);
     wait();
-    PRINTL("Task %d was sent to core", t.id);
   }
 }
 
 void board::read_ready_tasks() {
   while(true) {
-    PRINTL("Reading ready tasks", "");
     while(!t_ready_out_v_sig.read()) {
       wait();
     }
     task t = t_ready_out_sig.read();
     t_ready_out_f_sig.write(true);
-    PRINTL("received ready task %d in board", t.id);
+    PRINTL("board::read_ready_tasks: received ready task %d in board", t.id);
     while(!ready_queue.nb_write(t)) {
       wait();
     }
@@ -136,13 +137,13 @@ void board::sendTask() {
     task t;
     while (!taskFifo.nb_read(t)) {
       // No tasks
-      //PRINTL("No tasks to send","");
       wait();
     }
-    PRINTL("Read a task with id %d from buffer", t.id);
+    PRINTL("board::sendTask: Read a task with id %d from buffer", t.id);
     // send task to nexus
     if (nex) {
       send_task_nexus(t);
+      PRINTL("board::sendTask: Sent task %d to nexus", t.id);
     }
     else {
       send_task_core(t);

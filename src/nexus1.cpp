@@ -85,10 +85,12 @@ void nexus::load() {
     PRINTL("Loading this task %d", t->id);
     TaskPoolEntry *tpe = new TaskPoolEntry(*t);
     while(!task_pool->add_entry(tpe, t->id)) {
+      PRINTL("Cannot add to task pool", "");
       wait();
     }
     PRINTL("Task %d was added to task pool", t->id);
     add_to_task_table(t);
+    PRINTL("Added to task table", "");
     wait();
   }
 }
@@ -325,6 +327,7 @@ void nexus::delete_task(task *t) {
     check_input(t->get_input_arg(i));
   }
   task_table->delete_task(t->id);
+  task_pool->delete_task(t->id);
 }
 
 void nexus::schedule_tasks() {
@@ -351,14 +354,13 @@ void nexus::read_finished() {
       task t = t_f_in.read();
       t_f_in_f.write(false);
       if (t != previous_f_task) {
+        PRINTL("New finished task is %d and previous one is %d", t.id, previous_f_task.id);
         previous_f_task = t;
         PRINTL("Finished task %d", t.id);
         this->delete_task(&t);
         this->schedule_tasks();
         t_f_in_f.write(true);
         wait();
-        // Now delete task from all tables
-        //delete_task(t);
       }
     }
     wait();

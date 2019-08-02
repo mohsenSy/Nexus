@@ -142,6 +142,11 @@ namespace nexus1 {
           if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data()) {
             ProducersTableEntry* pte = entries[i]->get_data();
             pte->delete_task(id);
+            if (pte->empty()) {
+              mem_addr addr = pte->get_addr();
+              int id = *(int *)&addr;
+              delete_entry(id);
+            }
           }
         }
       }
@@ -250,6 +255,11 @@ namespace nexus1 {
           if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data()) {
             ConsumersTableEntry* cte = entries[i]->get_data();
             cte->delete_task(id);
+            if (cte->get_deps() == 0 && cte->empty()) {
+              mem_addr addr = cte->get_addr();
+              int id = *(int *)&addr;
+              delete_entry(id);
+            }
           }
         }
       }
@@ -364,6 +374,16 @@ namespace nexus1 {
         std::cout << "task id: " << t.id << " inputs: " << t.input_args << " outputs: " << t.output_args << std::endl;
       }
   };
+  class TaskPool : public Table<TaskPoolEntry> {
+    public:
+      TaskPool(int count) : Table<TaskPoolEntry>(count) {}
+      void delete_task(int id) {
+        delete_entry(id);
+      }
+      int size() {
+        return count;
+      }
+  };
   SC_MODULE(nexus) {
 
     sc_in_clk clk;
@@ -391,7 +411,7 @@ namespace nexus1 {
     sc_fifo<task> in_buffer; // Buffer for received tasks.
     sc_fifo<task> task_queue; // Buffer for tasks ready for execution.
 
-    Table<TaskPoolEntry>* task_pool;
+    TaskPool* task_pool;
     //Table<TaskTableEntry>* task_table;
     TaskTable* task_table;
     ProducersTable* producers_table;
@@ -433,7 +453,7 @@ namespace nexus1 {
       previous_task.id = 0;
       previous_f_task.id = 0;
 
-      task_pool = new Table<TaskPoolEntry>(NEXUS1_TASK_NUM);
+      task_pool = new TaskPool(NEXUS1_TASK_NUM);
       task_table = new TaskTable(NEXUS1_TASK_TABLE_SIZE);
       producers_table = new ProducersTable(NEXUS1_PRODUCERS_TABLE_SIZE);
       consumers_table = new ConsumersTable(NEXUS1_CONSUMERS_TABLE_SIZE);

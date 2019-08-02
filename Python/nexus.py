@@ -1,17 +1,31 @@
 import csv
-
+import random
 ProducersTableEntryListSize = 10
 ConsumersTableEntryListSize = 10
 
 class Task:
-    def __init__(self, id, num_inputs, num_outputs, inputs, outputs):
+    MIN_EXECUTION_TIME = 100
+    MAX_EXECUTION_TIME = 1000
+    def __init__(self, id, num_inputs, num_outputs, inputs, outputs, e_time = None):
         self.id = id
+        if e_time is None:
+            e_time = random.randint(Task.MIN_EXECUTION_TIME, Task.MAX_EXECUTION_TIME)
+        self.e_time = e_time
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
         self.inputs = inputs
         self.outputs = outputs
     def __str__(self):
         return "<Task {}: ({}, {}, {}, {})".format(self.id, self.num_inputs, self.num_outputs, self.inputs, self.outputs)
+    def list(self):
+        data = []
+        data.append(self.id)
+        data.append(self.e_time)
+        data.append(self.num_inputs)
+        data.append(self.num_outputs)
+        data.extend(self.inputs)
+        data.extend(self.outputs)
+        return data
 
 class TaskTableEntry:
     def __init__(self, task):
