@@ -342,6 +342,9 @@ void nexus::read_finished() {
         previous_f_task = t;
         PRINTL("nexus::read_finished: Finished task %d", t.id);
         this->delete_task(&t);
+        #ifdef DEBUG
+        debug_print(4);
+        #endif
         this->schedule_tasks();
         t_f_in_f.write(true);
         wait();
