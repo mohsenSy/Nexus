@@ -497,6 +497,7 @@ namespace nexus1 {
     TaskPool* task_pool;
     //Table<TaskTableEntry>* task_table;
     TaskTable* task_table;
+    sc_mutex task_table_mutex;
     ProducersTable* producers_table;
     ConsumersTable* consumers_table;
 

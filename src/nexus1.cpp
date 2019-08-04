@@ -115,8 +115,10 @@ void nexus::send_ready_task() {
 void nexus::add_to_task_table(task* t) {
   TaskTableEntry* tte = new TaskTableEntry(*t);
   PRINTL("nexus::add_to_task_table: calculate deps for task %d", t->id);
+  task_table_mutex.lock();
   int deps = calculate_deps(t);
   tte->set_deps(deps);
+  task_table_mutex.unlock();
   PRINTL("nexus::add_to_task_table: Task %d has %d deps count", t->id, tte->get_deps());
   while(!task_table->add_entry(tte, t->id)) {
     wait();
@@ -135,11 +137,15 @@ int nexus::add_input_prod(mem_addr input, task *t) {
   ProducersTableEntry* pr = producers_table->get_entry_for_addr(input);
   wait();
   if (pr != nullptr) {
-    wait();
-    while(!pr->add_task(*t)) {
-      wait();
+    for (int i = 0; i < pr->size(); i++) {
+      if (!check_task_input(pr->get_task(i), input)) {
+        wait();
+        while(!pr->add_task(*t)) {
+          wait();
+        }
+        return 1;
+      }
     }
-    return 1;
   }
   return 0;
 }
@@ -212,6 +218,7 @@ int nexus::calculate_deps(task* t) {
     // Process each input arg
     deps += add_input_prod(t->get_input_arg(i), t);
     deps += add_input_cons(t->get_input_arg(i), t);
+    PRINTL("nexus::calculate_deps: deps for input %d task %d are %d", t->get_input_arg(i), t->id, deps);
   }
 
   for (int i = 0; i < t->output_args; i++) {
@@ -220,9 +227,11 @@ int nexus::calculate_deps(task* t) {
     int outputDepsProd = add_output_prod(t->get_output_arg(i), t);
     if (outputDepsCons == 0) {
       deps += outputDepsProd;
+      PRINTL("nexus::calculate_deps: deps for output %d task %d are %d", t->get_output_arg(i), t->id, outputDepsProd);
     }
     else {
       deps += outputDepsCons;
+      PRINTL("nexus::calculate_deps: deps for output %d task %d are %d", t->get_output_arg(i), t->id, outputDepsCons);
     }
   }
   return deps;
@@ -295,6 +304,7 @@ void nexus::check_input(mem_addr addr) {
 }
 
 void nexus::delete_task(task *t) {
+  task_table_mutex.lock();
   task t_to_delete = task_table->get_task(t->id);
   PRINTL("nexus::delete_task: Deleteing task %d", t_to_delete.id);
   producers_table->delete_task(t->id);
@@ -313,6 +323,7 @@ void nexus::delete_task(task *t) {
   wait();
   task_pool->delete_task(t->id);
   wait();
+  task_table_mutex.unlock();
   PRINTL("nexus::delete_task: Task %d was deleted", t_to_delete.id);
 }
 
@@ -344,6 +355,8 @@ void nexus::read_finished() {
         this->delete_task(&t);
         #ifdef DEBUG
         debug_print(4);
+        debug_print(5);
+        debug_print(6);
         #endif
         this->schedule_tasks();
         t_f_in_f.write(true);
