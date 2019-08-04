@@ -268,10 +268,12 @@ void nexus::check_output(mem_addr addr) {
       }
       task t = pte->get_task(0);
       task_table->dec_deps(t.id);
-      for (int i = 1; i < pte->size(); i++) {
-        t = pte->get_task(i);
-        if (check_task_input(t, addr)) {
-          task_table->dec_deps(t.id);
+      if (check_task_input(t, addr)) {
+        for (int i = 1; i < pte->size(); i++) {
+          t = pte->get_task(i);
+          if (check_task_input(t, addr)) {
+            task_table->dec_deps(t.id);
+          }
         }
       }
     }
