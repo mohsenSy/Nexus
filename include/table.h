@@ -99,6 +99,20 @@ class Table {
       return this->count;
     }
 
+    bool has_empty_entries() {
+      m->lock();
+      for (int i = 0; i < count; i++) {
+        if (entries[i] == nullptr) {
+          return true;
+        }
+        if (!entries[i]->get_used()) {
+          return true;
+        }
+      }
+      m->unlock();
+      return false;
+    }
+
     T *operator[](int index) {
       m->lock();
       if (index < 0) {

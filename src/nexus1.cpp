@@ -64,6 +64,7 @@ void nexus::receive() {
         // Now the new task is read just write it to in_buffer
         while(!in_buffer.nb_write(t)) {
           rdy.write(false);
+          //PRINTL("In buffer is full", "");
           wait();
         }
         PRINTL("nexus::receive Received new task %d", t.id);
@@ -115,6 +116,9 @@ void nexus::send_ready_task() {
 void nexus::add_to_task_table(task* t) {
   TaskTableEntry* tte = new TaskTableEntry(*t);
   PRINTL("nexus::add_to_task_table: calculate deps for task %d", t->id);
+  while(!task_table->has_empty_entries()) {
+    wait();
+  }
   task_table_mutex.lock();
   int deps = calculate_deps(t);
   tte->set_deps(deps);
@@ -332,7 +336,7 @@ void nexus::delete_task(task *t) {
 void nexus::schedule_tasks() {
   // Here I loop through all tasks and send ready ones
   for (int i = 0; i < task_table->size(); i++) {
-    TaskTableEntry* tte = task_table->get_entry(i);
+    auto tte = task_table->get_entry_by_index(i);
     if (tte) {
       if (tte->get_deps() == 0 && tte->get_status() != TaskStatus::SENT) {
         while(!task_queue.nb_write(tte->get_task())) {
@@ -355,11 +359,6 @@ void nexus::read_finished() {
         previous_f_task = t;
         PRINTL("nexus::read_finished: Finished task %d", t.id);
         this->delete_task(&t);
-        #ifdef DEBUG
-        debug_print(4);
-        debug_print(5);
-        debug_print(6);
-        #endif
         this->schedule_tasks();
         t_f_in_f.write(true);
         wait();

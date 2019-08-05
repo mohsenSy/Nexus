@@ -39,7 +39,7 @@ public:
   void send_task(const task t) {
     // Make sure the board unit is ready to receive a new task
     while(rdy_sig != true) {
-      //cout << "Waiting for RDY" << std::endl;
+      cout << "Waiting for RDY" << std::endl;
       wait();
     }
     t_in_v_sig = true;
@@ -61,7 +61,7 @@ public:
     }
     // std::cout << "Sent all tasks" << std::endl;
     int i = 0;
-    while (i++ != 10000) {
+    while (i++ != 1000000) {
       wait();
     }
     /*while (rdy_sig != true) {
@@ -85,7 +85,7 @@ int sc_main(int argc, char **argv) {
   sc_signal<bool> t_in_v_sig;
   sc_signal<bool> t_in_f_sig;
   sc_signal<bool> rdy_sig;*/
-  std::string fileName = "nexus_tasks.csv";
+  std::string fileName = "tasks.csv";
   //cout << "Enter file name: ";
   //cin >> fileName;
   std::vector<task> tasks;

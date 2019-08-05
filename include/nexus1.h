@@ -396,6 +396,15 @@ namespace nexus1 {
         m->unlock();
         return t;
       }
+      TaskTableEntry* get_entry_by_index(int index) {
+        if (index < 0 || index > count) {
+          return nullptr;
+        }
+        if (entries[index] == nullptr) {
+          return nullptr;
+        }
+        return entries[index]->get_data();
+      }
       TaskTableEntry* get_entry(int id) {
         m->lock();
         for (int i = 0; i < count; i++) {
