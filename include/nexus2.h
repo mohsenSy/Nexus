@@ -6,6 +6,77 @@
 #include <systemc>
 
 namespace nexus2 {
+  class KickOfList {
+    private:
+      std::vector<task> tasks;
+      int size;
+      sc_mutex* m;
+    public:
+      KickOfList() {
+        tasks = std::vector<task>();
+        size = 0;
+        m = new sc_mutex();
+      }
+      bool push(task t) {
+        m->lock();
+        if ( size < NEXUS1_KICK_OFF_LIST_SIZE ) {
+          tasks.push_back(t);
+          size++;
+          m->unlock();
+          return true;
+        }
+        m->unlock();
+        return false;
+      }
+      void pop() {
+        m->lock();
+        if (!tasks.empty()) {
+          tasks.pop_back();
+          size--;
+        }
+        m->unlock();
+      }
+
+      void delete_task(int id) {
+        m->lock();
+        if (tasks.empty()) {
+          m->unlock();
+          return;
+        }
+        if (tasks[0].id == id) {
+          tasks.erase(tasks.begin());
+          size--;
+        }
+        m->unlock();
+      }
+
+      bool empty() {
+        return tasks.empty();
+      }
+
+      int get_size() {
+        return size;
+      }
+
+      task *get_task(int index) {
+        m->lock();
+        if (index >= 0 && index < size) {
+          m->unlock();
+          return &tasks[index];
+        }
+        m->unlock();
+        return nullptr;
+      }
+
+      void print() {
+        for(int i = 0; i < tasks.size(); i++) {
+          if (i == 0) {
+            std::cout << "Kick Of List:" << std::endl;
+          }
+          std::cout << "i: " << i << " task: " << tasks[i].id << std::endl;
+        }
+      }
+  };
   class TaskPoolEntry {
     private:
       task t;
@@ -57,6 +128,70 @@ namespace nexus2 {
       }
   };
 
+  class DependenceTableEntry {
+    private:
+      mem_addr addr;
+      bool isOut;
+      int rdrs;
+      bool ww;
+      KickOfList list;
+      sc_mutex *m;
+    public:
+      DependenceTableEntry(mem_addr addr, bool isOut = false, int rdrs = 1, bool ww = false) {
+        this->addr = addr;
+        this->isOut = isOut;
+        this->rdrs = rdrs;
+        this->ww = ww;
+        this->list = KickOfList();
+        this->m = new sc_mutex();
+      }
+      bool getIsOut() {
+        m->lock();
+        bool b = isOut;
+        m->unlock();
+        return b;
+      }
+      bool getWw() {
+        m->lock();
+        bool b = ww;
+        m->unlock();
+        return b;
+      }
+      void incRdrs(int i = 1) {
+        m->lock();
+        rdrs += i;
+        m->unlock();
+      }
+      void addTask(task &t) {
+        list.push(t);
+      }
+      void setWw(bool b) {
+        m->lock();
+        ww = b;
+        m->unlock();
+      }
+      void print() {
+        cout << "addr " << addr << " mode " << (isOut ? "output" : "input") << " readers " << rdrs << " writer waits " << ww << endl;
+      }
+  };
+
+  class DependenceTable : public Table<DependenceTableEntry> {
+    private:
+      int count;
+    public:
+      DependenceTable(int c) : Table<DependenceTableEntry>(c) {}
+      bool addAddr(mem_addr addr, bool isOut = false) {
+        DependenceTableEntry *dte = new DependenceTableEntry(addr, isOut);
+        return add_entry(dte, *(int *)&addr);
+      }
+      DependenceTableEntry* getEntry(mem_addr addr) {
+        return get_data(*(int *)&addr);
+      }
+      void dump() {
+        print_entries();
+      }
+  };
+
   SC_MODULE(nexus) {
     sc_in_clk clk;
     sc_in<task> t_in; // Task input
@@ -86,6 +221,7 @@ namespace nexus2 {
     //sc_fifo<task> task_queue; // Buffer for tasks ready for execution.
 
     TaskPool* task_pool;
+    DependenceTable* deps_table;
     //TaskTable* task_table;
     //sc_mutex task_table_mutex;
     //ProducersTable* producers_table;
@@ -97,6 +233,9 @@ namespace nexus2 {
     // Nexus2 threads
     void getTDs(); // Receive a new task and store it in receive buffer
     void writeTP(); // Write tasks to the pool
+    void checkDeps(); // read new task from new tasks buffer and update their deps
+
+    int checkDeps(task&);
     /*void add_to_task_table(task*);
     int calculate_deps(task*);
     void send_task();
@@ -126,6 +265,7 @@ namespace nexus2 {
       previous_f_task.id = 0;
 */
       task_pool = new TaskPool(NEXUS2_TASK_NUM);
+      deps_table = new DependenceTable(NEXUS2_DEPS_TABLE_SIZE);
       /*task_table = new TaskTable(NEXUS1_TASK_TABLE_SIZE);
       producers_table = new ProducersTable(NEXUS1_PRODUCERS_TABLE_SIZE);
       consumers_table = new ConsumersTable(NEXUS1_CONSUMERS_TABLE_SIZE);
@@ -139,6 +279,7 @@ namespace nexus2 {
       SC_CTHREAD(send_ready_task, clk.pos());*/
       SC_CTHREAD(getTDs, clk.pos());
       SC_CTHREAD(writeTP, clk.pos());
+      SC_CTHREAD(checkDeps, clk.pos());
     }
   };
 }

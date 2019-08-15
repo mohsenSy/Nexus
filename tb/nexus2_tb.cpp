@@ -166,7 +166,7 @@ public:
 
 int sc_main(int argc, char **argv) {
   nexus2Helper *n2H = new nexus2Helper("nexus2");
-  std::string fileName = "new.csv";
+  std::string fileName = "nexus_tasks.csv";
   //cout << "Enter file name: ";
   //cin >> fileName;
   std::vector<task> tasks;

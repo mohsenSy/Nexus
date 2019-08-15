@@ -42,3 +42,54 @@ void nexus::writeTP() {
     wait();
   }
 }
+
+void nexus::checkDeps() {
+  while (true) {
+    task t;
+    while(!new_tasks.nb_read(t)) {
+      wait();
+    }
+    int deps = checkDeps(t);
+    PRINTL("Deps for task %d are %d", t.id, deps);
+    deps_table->dump();
+    wait();
+  }
+}
+
+int nexus::checkDeps(task &t) {
+  int d = 0;
+  PRINTL("Checking deps for %d", t.id);
+  for (int i = 0 ; i < t.input_args; i++) {
+    mem_addr input = t.get_input_arg(i);
+    PRINTL("Processing input %d in task %d", input, t.id);
+    DependenceTableEntry *dte = deps_table->getEntry(input);
+    if (!dte) {
+      deps_table->addAddr(input);
+    }
+    else {
+      if (!dte->getIsOut() && !dte->getWw()) {
+        dte->incRdrs();
+      }
+      else {
+        dte->addTask(t);
+        d++;
+      }
+    }
+  }
+  for (int i = 0 ; i < t.output_args; i++) {
+    mem_addr output = t.get_output_arg(i);
+    PRINTL("Processing output %d in task %d", output, t.id);
+    DependenceTableEntry *dte = deps_table->getEntry(output);
+    if (!dte) {
+      deps_table->addAddr(output, true);
+    }
+    else {
+      dte->addTask(t);
+      d++;
+      if (!dte->getIsOut()) {
+        dte->setWw(true);
+      }
+    }
+  }
+  return d;
+}
