@@ -51,7 +51,23 @@ void nexus::checkDeps() {
     }
     int deps = checkDeps(t);
     PRINTL("Deps for task %d are %d", t.id, deps);
-    deps_table->dump();
+    if (deps == 0) {
+      while(!global_ready_tasks.nb_write(t)) {
+        wait();
+      }
+    }
+    wait();
+  }
+}
+
+
+void nexus::schedule() {
+  while (true) {
+    task t;
+    while(!global_ready_tasks.nb_read(t)) {
+      wait();
+    }
+    PRINTL("Sending task %d to a core", t.id);
     wait();
   }
 }
