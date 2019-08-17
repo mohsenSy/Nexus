@@ -98,6 +98,21 @@ void nexus::send_task_core(task &t) {
   wait();
 }
 
+void nexus::handleFinished() {
+  while(true) {
+    for (int i = 0; i < CORE_NUM; i++) {
+      if (t_out_vs[i].read()) {
+        task t = t_outs[i].read();
+        t_out_fs[i].write(true);
+        PRINTL("Deleteing task %d from nexus tables", t.id);
+        wait();
+      }
+      wait();
+    }
+    wait();
+  }
+}
+
 int nexus::checkDeps(task &t) {
   int d = 0;
   PRINTL("Checking deps for %d", t.id);

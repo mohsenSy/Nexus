@@ -248,6 +248,7 @@ namespace nexus2 {
     void writeTP(); // Write tasks to the pool
     void checkDeps(); // read new task from new tasks buffer and update their deps
     void schedule(); // Take ready tasks from global list and send them to a core
+    void handleFinished();
 
     int checkDeps(task&);
     void send_task_core(task&);
@@ -318,6 +319,7 @@ namespace nexus2 {
       SC_CTHREAD(writeTP, clk.pos());
       SC_CTHREAD(checkDeps, clk.pos());
       SC_CTHREAD(schedule, clk.pos());
+      SC_CTHREAD(handleFinished, clk.pos());
     }
   };
 }
