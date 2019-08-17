@@ -198,15 +198,15 @@ namespace nexus2 {
     sc_in<task> t_in; // Task input
     sc_in<bool> t_in_v; // Is task input valid?
     sc_out<bool> t_in_f; // Finished reading input task?
-    /*sc_out<task> t_out; // Task output
+    sc_out<task> t_out; // Task output
     sc_out<bool> t_ready; // Is there a ready task for execution?
     sc_out<bool> t_out_v; // Is task output valid?
     sc_in<bool> t_out_f; // Finished reading output task?
     sc_in<task> t_f_in; // Finished task
     sc_out<bool> t_f_in_f; // Finished reading finished task?
-    sc_in<bool> t_f_in_v; // Finished task input valid?*/
+    sc_in<bool> t_f_in_v; // Finished task input valid?
     sc_out<bool> rdy; // Check if nexus is ready or not to receive tasks?
-    /*sc_out<task> t_ready_out;
+    sc_out<task> t_ready_out;
     sc_out<bool> t_ready_out_v;
     sc_in<bool> t_ready_out_f;
 
@@ -215,7 +215,6 @@ namespace nexus2 {
     void debug_thread();
     void debug_print(int);
     #endif
-    */
 
     sc_fifo<task> tds_buffer; // Buffer for received tasks.
     sc_fifo<task> new_tasks;
@@ -223,6 +222,15 @@ namespace nexus2 {
     sc_vector<sc_fifo<task> > ci_ready_tasks;
     sc_vector<sc_fifo<task> > ci_finished_tasks;
     //sc_fifo<task> task_queue; // Buffer for tasks ready for execution.
+
+    // ports for cores
+    sc_vector<sc_out<task> > t_ins;
+    sc_vector<sc_out<bool> > t_in_vs;
+    sc_vector<sc_in<bool> > t_in_fs;
+    sc_vector<sc_in<task> > t_outs;
+    sc_vector<sc_in<bool> > t_out_vs;
+    sc_vector<sc_out<bool> > t_out_fs;
+    sc_vector<sc_in<bool> > rdys;
 
     TaskPool* task_pool;
     DependenceTable* deps_table;
@@ -242,6 +250,7 @@ namespace nexus2 {
     void schedule(); // Take ready tasks from global list and send them to a core
 
     int checkDeps(task&);
+    void send_task_core(task&);
     /*void add_to_task_table(task*);
     int calculate_deps(task*);
     void send_task();
@@ -273,8 +282,20 @@ namespace nexus2 {
       currentCore = 0;
       ci_ready_tasks.init(CORE_NUM, creator_rdy);
       ci_finished_tasks.init(CORE_NUM, creator_fin);
-      /*t_out_v.initialize(false);
+      t_ins.init(CORE_NUM);
+      t_in_vs.init(CORE_NUM);
+      t_in_fs.init(CORE_NUM);
+      t_outs.init(CORE_NUM);
+      t_out_vs.init(CORE_NUM);
+      t_out_fs.init(CORE_NUM);
+      rdys.init(CORE_NUM);
+      for (int i = 0; i < CORE_NUM; i++) {
+        t_in_vs[i].initialize(false);
+        t_out_fs[i].initialize(false);
+      }
+      t_out_v.initialize(false);
       t_ready.initialize(false);
+      /*
       #ifdef DEBUG
       SC_CTHREAD(debug_thread, clk.pos());
       #endif

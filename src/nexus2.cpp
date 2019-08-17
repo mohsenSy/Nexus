@@ -2,6 +2,18 @@
 #include <utils.h>
 using namespace nexus2;
 
+#ifdef DEBUG
+void nexus::debug_print(int d) {
+}
+void nexus::debug_thread() {
+  while(true) {
+    int d = debug.read();
+    debug_print(d);
+    wait();
+  }
+}
+#endif
+
 void nexus::getTDs() {
   rdy.write(true);
   while (true) {
@@ -68,8 +80,22 @@ void nexus::schedule() {
       wait();
     }
     PRINTL("Sending task %d to a core", t.id);
+    send_task_core(t);
     wait();
   }
+}
+
+void nexus::send_task_core(task &t) {
+  while(!rdys[currentCore]) {
+    wait();
+  }
+  t_ins[currentCore].write(t);
+  t_in_vs[currentCore].write(true);
+  do {
+    wait();
+  }while(!t_in_fs[currentCore].read());
+  t_in_vs[currentCore++].write(false);
+  wait();
 }
 
 int nexus::checkDeps(task &t) {

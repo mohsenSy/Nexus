@@ -6,10 +6,10 @@
 #include <task.h>
 #include <core.h>
 #include <memory.h>
-#include <nexus1.h>
+#include <nexus2.h>
 #include <string>
 
-using namespace nexus1;
+using namespace nexus2;
 
 SC_MODULE(board) {
   sc_in_clk clk;
@@ -78,9 +78,9 @@ SC_MODULE(board) {
     //SC_THREAD(receiveTask);
     //sensitive << clk;
     SC_CTHREAD(sendTask, clk.pos());
-    SC_CTHREAD(send_ready_tasks, clk.pos());
-    SC_CTHREAD(read_ready_tasks, clk.pos());
-    SC_CTHREAD(read_finished, clk.pos());
+    //SC_CTHREAD(send_ready_tasks, clk.pos());
+    //SC_CTHREAD(read_ready_tasks, clk.pos());
+    //SC_CTHREAD(read_finished, clk.pos());
     //SC_THREAD(sendTask);
     //sensitive << clk;
     previous_task.id = 0;
@@ -142,13 +142,20 @@ SC_MODULE(board) {
     for (int i = 0; i < CORE_NUM; i++) {
       cores[i].clk(clk);
       cores[i].t_in(t_in_sigs[i]);
+      nex->t_ins[i](t_in_sigs[i]);
       cores[i].t_in_v(t_in_v_sigs[i]);
+      nex->t_in_vs[i](t_in_v_sigs[i]);
       cores[i].t_in_f(t_in_f_sigs[i]);
+      nex->t_in_fs[i](t_in_f_sigs[i]);
       cores[i].t_out(t_out_sigs[i]);
+      nex->t_outs[i](t_out_sigs[i]);
       cores[i].t_out_v(t_out_v_sigs[i]);
+      nex->t_out_vs[i](t_out_v_sigs[i]);
       cores[i].t_out_f(t_out_f_sigs[i]);
+      nex->t_out_fs[i](t_out_f_sigs[i]);
       t_out_f_sigs[i].write(false);
       cores[i].rdy(rdy_sigs[i]);
+      nex->rdys[i](rdy_sigs[i]);
       cores[i].memory_rdy(memory_rdy_sig);
       cores[i].memory_addr(memory_addr_sig);
       cores[i].memory_addr_v(memory_addr_v_sig);
