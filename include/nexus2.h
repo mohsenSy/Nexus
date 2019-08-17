@@ -116,6 +116,11 @@ namespace nexus2 {
         dc = d;
         m->unlock();
       }
+      void decDeps(int i = 1) {
+        m->lock();
+        dc -= i;
+        m->unlock();
+      }
   };
 
   class TaskPool : public Table<TaskPoolEntry> {
@@ -126,6 +131,24 @@ namespace nexus2 {
       bool addTask(task &t) {
         TaskPoolEntry *tpe = new TaskPoolEntry(t);
         return add_entry(tpe, t.id);
+      }
+      TaskPoolEntry* getEntryByIndex(int index) {
+        if (index < 0 || index > count) {
+          return nullptr;
+        }
+        if (entries[index] == nullptr) {
+          return nullptr;
+        }
+        return entries[index]->get_data();
+      }
+      void deleteTask(task &t) {
+        delete_entry(t.id);
+      }
+      void decDeps(task* t) {
+        TaskPoolEntry* tpe = get_data(t->id);
+        if (tpe) {
+          tpe->decDeps();
+        }
       }
   };
 
@@ -163,13 +186,30 @@ namespace nexus2 {
         rdrs += i;
         m->unlock();
       }
+      void decRdrs(int i = 1) {
+        m->lock();
+        rdrs -= i;
+        m->unlock();
+      }
+      int getRdrs() {
+        m->lock();
+        int r = rdrs;
+        m->unlock();
+        return r;
+      }
       void addTask(task &t) {
         list.push(t);
+      }
+      task* pop() {
+        return list.get_task(0);
       }
       void setWw(bool b) {
         m->lock();
         ww = b;
         m->unlock();
+      }
+      int size() {
+        return list.get_size();
       }
       void print() {
         cout << "addr " << addr << " mode " << (isOut ? "output" : "input") << " readers " << rdrs << " writer waits " << ww << endl;
@@ -187,6 +227,44 @@ namespace nexus2 {
       }
       DependenceTableEntry* getEntry(mem_addr addr) {
         return get_data(*(int *)&addr);
+      }
+      int decRdrs(mem_addr addr) {
+        int id = *(int*)&addr;
+        DependenceTableEntry* dte = get_data(id);
+        if (dte) {
+          dte->decRdrs();
+          return dte->getRdrs();
+        }
+        return -100;
+      }
+      bool getWw(mem_addr addr) {
+        int id = *(int*)&addr;
+        DependenceTableEntry* dte = get_data(id);
+        if (dte) {
+          return dte->getWw();
+        }
+        return false;
+      }
+      void deleteAddr(mem_addr addr) {
+        int id = *(int*)&addr;
+        delete_entry(id);
+      }
+      task* pop(mem_addr addr) {
+        int id = *(int*)&addr;
+        DependenceTableEntry* dte = get_data(id);
+        if (dte) {
+          task* t = dte->pop();
+          return t;
+        }
+        return nullptr;
+      }
+      int getListSize(mem_addr addr) {
+        int id = *(int*)&addr;
+        DependenceTableEntry* dte = get_data(id);
+        if (dte) {
+          return dte->size();
+        }
+        return -100;
       }
       void dump() {
         print_entries();
@@ -252,6 +330,10 @@ namespace nexus2 {
 
     int checkDeps(task&);
     void send_task_core(task&);
+    void deleteTask(task&);
+    bool check_task_input(task&, mem_addr);
+    bool check_task_output(task&, mem_addr);
+    void scheduleReadyTasks();
     /*void add_to_task_table(task*);
     int calculate_deps(task*);
     void send_task();

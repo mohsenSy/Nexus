@@ -98,13 +98,81 @@ void nexus::send_task_core(task &t) {
   wait();
 }
 
+bool nexus::check_task_input(task &t, mem_addr addr) {
+  for (int i = 0; i < t.input_args; i++) {
+    if(t.get_input_arg(i) == addr) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool nexus::check_task_output(task &t, mem_addr addr) {
+  for (int i = 0; i < t.output_args; i++) {
+    if(t.get_output_arg(i) == addr) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void nexus::deleteTask(task& t) {
+  PRINTL("Deleteing task %d from nexus tables", t.id);
+  for (int i = 0; i < t.input_args; i++) {
+    mem_addr input = t.get_input_arg(i);
+    if (!check_task_output(t, input)) {
+      int rdrs = deps_table->decRdrs(input);
+      PRINTL("Decrement deps for address %d", input);
+      if (rdrs == 0 && !deps_table->getWw(input)) {
+        deps_table->deleteAddr(input);
+      }
+      else if (rdrs == 0 && deps_table->getWw(input)) {
+        task *t = deps_table->pop(input);
+        task_pool->decDeps(t);
+      }
+    }
+  }
+  for (int i = 0; i < t.output_args; i++) {
+    mem_addr output = t.get_output_arg(i);
+    int size = deps_table->getListSize(output);
+    if (size == 0) {
+      deps_table->deleteAddr(output);
+    }
+    else {
+      while(deps_table->getListSize(output) > 0) {
+        task *t = deps_table->pop(output);
+        task_pool->decDeps(t);
+        if (check_task_output(*t, output)) {
+          break;
+        }
+        deps_table->decRdrs(output);
+      }
+    }
+  }
+  task_pool->deleteTask(t);
+}
+
+void nexus::scheduleReadyTasks() {
+  for (int i = 0; i < NEXUS2_TASK_NUM; i++) {
+    TaskPoolEntry* tpe = task_pool->getEntryByIndex(i);
+    if (tpe) {
+      if (tpe->getDc() == 0) {
+        do {
+          wait();
+        }while(global_ready_tasks.nb_write(tpe->getTask()));
+      }
+    }
+  }
+}
+
 void nexus::handleFinished() {
   while(true) {
     for (int i = 0; i < CORE_NUM; i++) {
       if (t_out_vs[i].read()) {
         task t = t_outs[i].read();
         t_out_fs[i].write(true);
-        PRINTL("Deleteing task %d from nexus tables", t.id);
+        deleteTask(t);
+        scheduleReadyTasks();
         wait();
       }
       wait();
