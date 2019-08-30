@@ -332,8 +332,10 @@ namespace nexus2 {
     sc_fifo<task> tds_buffer; // Buffer for received tasks.
     sc_fifo<task> new_tasks;
     sc_fifo<task> global_ready_tasks;
+    sc_fifo<task> finished_tasks;
     sc_vector<sc_fifo<task> > ci_ready_tasks;
     sc_vector<sc_fifo<task> > ci_finished_tasks;
+    sc_mutex core_mutex;
     //sc_fifo<task> task_queue; // Buffer for tasks ready for execution.
 
     // ports for cores
@@ -363,6 +365,7 @@ namespace nexus2 {
     void checkDeps(); // read new task from new tasks buffer and update their deps
     void schedule(); // Take ready tasks from global list and send them to a core
     void handleFinished();
+    void readFinished();
 
     int checkDeps(task&);
     void send_task_core(task&);
@@ -394,7 +397,7 @@ namespace nexus2 {
       return new sc_fifo<task>("Finished Tasks", NEXUS2_FIN_TASKS_NUM);
     }
     SC_CTOR(nexus) : tds_buffer("TDs Buffer", NEXUS2_TDS_BUFFER_DEPTH), new_tasks("New Tasks", NEXUS2_NEW_TASKS_NUM),
-      global_ready_tasks("Global Ready Tasks", NEXUS2_GLOBAL_TASK_NUM){
+      global_ready_tasks("Global Ready Tasks", NEXUS2_GLOBAL_TASK_NUM), finished_tasks("Finished Tasks", NEXUS2_FINISHED_TASK_NUM){
       t_in_f.initialize(false);
       previous_task.id = 0;
       rdy.initialize(true);
@@ -439,6 +442,7 @@ namespace nexus2 {
       SC_CTHREAD(checkDeps, clk.pos());
       SC_CTHREAD(schedule, clk.pos());
       SC_CTHREAD(handleFinished, clk.pos());
+      SC_CTHREAD(readFinished, clk.pos());
     }
   };
 }

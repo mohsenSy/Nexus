@@ -91,9 +91,11 @@ void nexus::send_task_core(task &t) {
   if (task_pool->getSent(t)) {
     return;
   }
+  core_mutex.lock();
   while(!rdys[currentCore]) {
     PRINTL("Waiting for core %d to be ready", currentCore);
     wait();
+    currentCore = ++currentCore % CORE_NUM;
   }
   PRINTL("Sending task %d to core %d", t.id, currentCore);
   t_ins[currentCore].write(t);
@@ -114,6 +116,7 @@ void nexus::send_task_core(task &t) {
   }
   task_pool->setSent(t, true);
   wait();
+  core_mutex.unlock();
 }
 
 bool nexus::check_task_input(task &t, mem_addr addr) {
@@ -179,29 +182,41 @@ void nexus::scheduleReadyTasks() {
     TaskPoolEntry* tpe = task_pool->getEntryByIndex(i);
     if (tpe) {
       if (tpe->getDc() == 0 && !tpe->getSent()) {
-        do {
-          wait();
-        }while(!global_ready_tasks.nb_write(tpe->getTask()));
-        PRINTL("New global ready task %d", tpe->getTask().id);
+        global_ready_tasks.nb_write(tpe->getTask());
       }
     }
+  }
+}
+
+void nexus::readFinished() {
+  task t;
+  while (true) {
+    do {
+      wait();
+    }while(!finished_tasks.nb_read(t));
+    deleteTask(t);
+    scheduleReadyTasks();
+    wait();
   }
 }
 
 void nexus::handleFinished() {
   while(true) {
     for (int i = 0; i < CORE_NUM; i++) {
-      //PRINTL("Checing core %d", i);
+      //PRINTL("Checking core %d", i);
+      core_mutex.lock();
       if (t_out_vs[i].read()) {
         PRINTL("Reading finished task from core %d", i);
         task t = t_outs[i].read();
         t_out_fs[i].write(true);
         wait();
         t_out_fs[i].write(false);
-        deleteTask(t);
-        scheduleReadyTasks();
+        do {
+          wait();
+        }while(!finished_tasks.nb_write(t));
         wait();
       }
+      core_mutex.unlock();
       wait();
     }
     wait();
