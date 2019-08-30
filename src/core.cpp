@@ -27,9 +27,10 @@ void core::handle_finished(void) {
       t_out.write(t);
       while(t_out_f.read() == false) {
         // Wait for the finished task to be read by the other unit
-        //PRINTL("Waiting for task %d to be read by the board", t.id);
+        PRINTL("Waiting for task %d to be read by the nexus", t.id);
         wait();
       }
+      PRINTL("Core finished task %d", t.id);
       t_out_v.write(false);
     }
     wait();

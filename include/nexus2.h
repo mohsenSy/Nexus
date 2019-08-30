@@ -32,7 +32,7 @@ namespace nexus2 {
       void pop() {
         m->lock();
         if (!tasks.empty()) {
-          tasks.pop_back();
+          tasks.erase(tasks.begin());
           size--;
         }
         m->unlock();
@@ -56,17 +56,20 @@ namespace nexus2 {
       }
 
       int get_size() {
-        return size;
+        //cout << "get_size" << endl;
+        //print();
+        return tasks.size();
       }
 
-      task *get_task(int index) {
+      task get_task(int index) {
         m->lock();
         if (index >= 0 && index < size) {
           m->unlock();
-          return &tasks[index];
+          return tasks[index];
         }
         m->unlock();
-        return nullptr;
+        task temp;
+        return temp;
       }
 
       void print() {
@@ -82,6 +85,7 @@ namespace nexus2 {
     private:
       task t;
       bool busy;
+      bool sent;
       int dc;
       sc_mutex *m;
     public:
@@ -89,6 +93,7 @@ namespace nexus2 {
         this->t = t;
         busy = false;
         dc = 0;
+        sent = false;
         m = new sc_mutex();
       }
       task getTask() {
@@ -121,11 +126,18 @@ namespace nexus2 {
         dc -= i;
         m->unlock();
       }
+      bool getSent() {
+        return sent;
+      }
+      void setSent(bool s) {
+        sent = s;
+      }
+      void print() {
+        cout << "id: " << t.id << " dc: " << dc << endl;
+      }
   };
 
   class TaskPool : public Table<TaskPoolEntry> {
-    private:
-      int count;
     public:
       TaskPool(int c) : Table<TaskPoolEntry>(c) {}
       bool addTask(task &t) {
@@ -144,10 +156,29 @@ namespace nexus2 {
       void deleteTask(task &t) {
         delete_entry(t.id);
       }
-      void decDeps(task* t) {
-        TaskPoolEntry* tpe = get_data(t->id);
+      void decDeps(task t) {
+        TaskPoolEntry* tpe = get_data(t.id);
         if (tpe) {
           tpe->decDeps();
+        }
+      }
+      void setDc(task &t, int deps) {
+        TaskPoolEntry* tpe = get_data(t.id);
+        if (tpe) {
+          tpe->setDc(deps);
+        }
+      }
+      void setSent(task& t, bool b) {
+        TaskPoolEntry* tpe = get_data(t.id);
+        if (tpe) {
+          cout << "Task " << t.id << " is set to sent " << b << endl;
+          tpe->setSent(b);
+        }
+      }
+      bool getSent(task& t) {
+        TaskPoolEntry* tpe = get_data(t.id);
+        if (tpe) {
+          return tpe->getSent();
         }
       }
   };
@@ -200,8 +231,10 @@ namespace nexus2 {
       void addTask(task &t) {
         list.push(t);
       }
-      task* pop() {
-        return list.get_task(0);
+      task pop() {
+        task t = list.get_task(0);
+        list.pop();
+        return t;
       }
       void setWw(bool b) {
         m->lock();
@@ -213,6 +246,7 @@ namespace nexus2 {
       }
       void print() {
         cout << "addr " << addr << " mode " << (isOut ? "output" : "input") << " readers " << rdrs << " writer waits " << ww << endl;
+        list.print();
       }
   };
 
@@ -249,14 +283,15 @@ namespace nexus2 {
         int id = *(int*)&addr;
         delete_entry(id);
       }
-      task* pop(mem_addr addr) {
+      task pop(mem_addr addr) {
         int id = *(int*)&addr;
         DependenceTableEntry* dte = get_data(id);
         if (dte) {
-          task* t = dte->pop();
+          task t = dte->pop();
           return t;
         }
-        return nullptr;
+        task temp;
+        return temp;
       }
       int getListSize(mem_addr addr) {
         int id = *(int*)&addr;
@@ -319,6 +354,7 @@ namespace nexus2 {
 
     task previous_task;
     int currentCore;
+    bool first;
     //task previous_f_task;
 
     // Nexus2 threads
@@ -363,6 +399,7 @@ namespace nexus2 {
       previous_task.id = 0;
       rdy.initialize(true);
       currentCore = 0;
+      first = true;
       ci_ready_tasks.init(CORE_NUM, creator_rdy);
       ci_finished_tasks.init(CORE_NUM, creator_fin);
       t_ins.init(CORE_NUM);

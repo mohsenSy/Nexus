@@ -42,6 +42,7 @@ void execute::do_execute() {
           PRINTL("finished task %d", t.id);
           do {
             // Wait until task is read by core unit
+            PRINTL("Wait for core to read finished task %d", t.id);
             wait();
             Stats::inc_execute_cycles();
           } while(t_out_f.read() == false);

@@ -62,11 +62,13 @@ void nexus::checkDeps() {
       wait();
     }
     int deps = checkDeps(t);
+    task_pool->setDc(t, deps);
     PRINTL("Deps for task %d are %d", t.id, deps);
     if (deps == 0) {
       while(!global_ready_tasks.nb_write(t)) {
         wait();
       }
+      PRINTL("New global ready task %d", t.id);
     }
     wait();
   }
@@ -75,26 +77,42 @@ void nexus::checkDeps() {
 
 void nexus::schedule() {
   while (true) {
+    //global_ready_tasks.dump();
     task t;
     while(!global_ready_tasks.nb_read(t)) {
       wait();
     }
-    PRINTL("Sending task %d to a core", t.id);
     send_task_core(t);
     wait();
   }
 }
 
 void nexus::send_task_core(task &t) {
+  if (task_pool->getSent(t)) {
+    return;
+  }
   while(!rdys[currentCore]) {
+    PRINTL("Waiting for core %d to be ready", currentCore);
     wait();
   }
+  PRINTL("Sending task %d to core %d", t.id, currentCore);
   t_ins[currentCore].write(t);
   t_in_vs[currentCore].write(true);
   do {
+    PRINTL("Waiting for core %d to read task", currentCore);
     wait();
   }while(!t_in_fs[currentCore].read());
-  t_in_vs[currentCore++].write(false);
+  t_in_vs[currentCore].write(false);
+  if (first) {
+    first = false;
+    PRINTL("First is %d", first);
+  }
+  else {
+    first = true;
+    currentCore = ++currentCore % CORE_NUM;
+    PRINTL("New core %d", currentCore);
+  }
+  task_pool->setSent(t, true);
   wait();
 }
 
@@ -127,7 +145,7 @@ void nexus::deleteTask(task& t) {
         deps_table->deleteAddr(input);
       }
       else if (rdrs == 0 && deps_table->getWw(input)) {
-        task *t = deps_table->pop(input);
+        task t = deps_table->pop(input);
         task_pool->decDeps(t);
       }
     }
@@ -140,9 +158,13 @@ void nexus::deleteTask(task& t) {
     }
     else {
       while(deps_table->getListSize(output) > 0) {
-        task *t = deps_table->pop(output);
+        PRINTL("Processing output %d", output);
+        //deps_table->print_entries();
+        task t = deps_table->pop(output);
+        //deps_table->print_entries();
         task_pool->decDeps(t);
-        if (check_task_output(*t, output)) {
+        PRINTL("Decrease deps for %d", t.id);
+        if (check_task_output(t, output)) {
           break;
         }
         deps_table->decRdrs(output);
@@ -156,10 +178,11 @@ void nexus::scheduleReadyTasks() {
   for (int i = 0; i < NEXUS2_TASK_NUM; i++) {
     TaskPoolEntry* tpe = task_pool->getEntryByIndex(i);
     if (tpe) {
-      if (tpe->getDc() == 0) {
+      if (tpe->getDc() == 0 && !tpe->getSent()) {
         do {
           wait();
-        }while(global_ready_tasks.nb_write(tpe->getTask()));
+        }while(!global_ready_tasks.nb_write(tpe->getTask()));
+        PRINTL("New global ready task %d", tpe->getTask().id);
       }
     }
   }
@@ -168,9 +191,13 @@ void nexus::scheduleReadyTasks() {
 void nexus::handleFinished() {
   while(true) {
     for (int i = 0; i < CORE_NUM; i++) {
+      //PRINTL("Checing core %d", i);
       if (t_out_vs[i].read()) {
+        PRINTL("Reading finished task from core %d", i);
         task t = t_outs[i].read();
         t_out_fs[i].write(true);
+        wait();
+        t_out_fs[i].write(false);
         deleteTask(t);
         scheduleReadyTasks();
         wait();

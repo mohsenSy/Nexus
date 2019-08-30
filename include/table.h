@@ -171,6 +171,7 @@ class Table {
     void print_entries() {
       for (int i = 0; i < count ; i++) {
         if (entries[i] != nullptr && entries[i]->get_data() != nullptr && entries[i]->get_used() == true) {
+          std::cout << "index: " << i << std::endl;
           std::cout << "id: " << entries[i]->get_id() << std::endl;
           entries[i]->get_data()->print();
           std::cout << "=========" << std::endl;
