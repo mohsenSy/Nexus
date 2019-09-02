@@ -23,6 +23,7 @@ void nexus::getTDs() {
       task t = t_in.read();
       if (previous_task != t) {
         previous_task = t;
+        wait();
         while(!tds_buffer.nb_write(t)) {
           rdy.write(false);
           wait();
@@ -40,16 +41,16 @@ void nexus::getTDs() {
 void nexus::writeTP() {
   while(true) {
     task t;
-    while(!tds_buffer.nb_read(t)) {
+    do {
       wait();
-    }
+    } while(!tds_buffer.nb_read(t));
     PRINTL("Writing task %d to task pool", t.id);
     while(!task_pool->addTask(t)) {
       wait();
     }
-    while(!new_tasks.nb_write(t)) {
+    do {
       wait();
-    }
+    } while(!new_tasks.nb_write(t));
     PRINTL("Task %d was added to the pool", t.id);
     wait();
   }
@@ -58,17 +59,16 @@ void nexus::writeTP() {
 void nexus::checkDeps() {
   while (true) {
     task t;
-    while(!new_tasks.nb_read(t)) {
+    do {
       wait();
-    }
+    } while(!new_tasks.nb_read(t));
     int deps = checkDeps(t);
     task_pool->setDc(t, deps);
     PRINTL("Deps for task %d are %d", t.id, deps);
     if (deps == 0) {
-      while(!global_ready_tasks.nb_write(t)) {
+      do {
         wait();
-      }
-      PRINTL("New global ready task %d", t.id);
+      } while(!global_ready_tasks.nb_write(t));
     }
     wait();
   }
@@ -79,9 +79,9 @@ void nexus::schedule() {
   while (true) {
     //global_ready_tasks.dump();
     task t;
-    while(!global_ready_tasks.nb_read(t)) {
+    do {
       wait();
-    }
+    } while(!global_ready_tasks.nb_read(t));
     send_task_core(t);
     wait();
   }
@@ -93,7 +93,6 @@ void nexus::send_task_core(task &t) {
   }
   core_mutex.lock();
   while(!rdys[currentCore]) {
-    PRINTL("Waiting for core %d to be ready", currentCore);
     wait();
     currentCore = ++currentCore % CORE_NUM;
   }
@@ -101,18 +100,15 @@ void nexus::send_task_core(task &t) {
   t_ins[currentCore].write(t);
   t_in_vs[currentCore].write(true);
   do {
-    PRINTL("Waiting for core %d to read task", currentCore);
     wait();
   }while(!t_in_fs[currentCore].read());
   t_in_vs[currentCore].write(false);
   if (first) {
     first = false;
-    PRINTL("First is %d", first);
   }
   else {
     first = true;
     currentCore = ++currentCore % CORE_NUM;
-    PRINTL("New core %d", currentCore);
   }
   task_pool->setSent(t, true);
   wait();
@@ -143,13 +139,17 @@ void nexus::deleteTask(task& t) {
     mem_addr input = t.get_input_arg(i);
     if (!check_task_output(t, input)) {
       int rdrs = deps_table->decRdrs(input);
+      wait();
       PRINTL("Decrement deps for address %d", input);
       if (rdrs == 0 && !deps_table->getWw(input)) {
         deps_table->deleteAddr(input);
+        wait();
       }
       else if (rdrs == 0 && deps_table->getWw(input)) {
         task t = deps_table->pop(input);
+        wait();
         task_pool->decDeps(t);
+        wait();
       }
     }
   }
@@ -158,30 +158,37 @@ void nexus::deleteTask(task& t) {
     int size = deps_table->getListSize(output);
     if (size == 0) {
       deps_table->deleteAddr(output);
+      wait();
     }
     else {
       while(deps_table->getListSize(output) > 0) {
         PRINTL("Processing output %d", output);
         //deps_table->print_entries();
         task t = deps_table->pop(output);
+        wait();
         //deps_table->print_entries();
         task_pool->decDeps(t);
+        wait();
         PRINTL("Decrease deps for %d", t.id);
         if (check_task_output(t, output)) {
           break;
         }
         deps_table->decRdrs(output);
+        wait();
       }
     }
   }
   task_pool->deleteTask(t);
+  wait();
 }
 
 void nexus::scheduleReadyTasks() {
   for (int i = 0; i < NEXUS2_TASK_NUM; i++) {
     TaskPoolEntry* tpe = task_pool->getEntryByIndex(i);
     if (tpe) {
+      wait();
       if (tpe->getDc() == 0 && !tpe->getSent()) {
+        wait();
         global_ready_tasks.nb_write(tpe->getTask());
       }
     }
@@ -230,15 +237,19 @@ int nexus::checkDeps(task &t) {
     mem_addr input = t.get_input_arg(i);
     PRINTL("Processing input %d in task %d", input, t.id);
     DependenceTableEntry *dte = deps_table->getEntry(input);
+    wait();
     if (!dte) {
       deps_table->addAddr(input);
+      wait();
     }
     else {
       if (!dte->getIsOut() && !dte->getWw()) {
         dte->incRdrs();
+        wait();
       }
       else {
         dte->addTask(t);
+        wait();
         d++;
       }
     }
@@ -247,14 +258,18 @@ int nexus::checkDeps(task &t) {
     mem_addr output = t.get_output_arg(i);
     PRINTL("Processing output %d in task %d", output, t.id);
     DependenceTableEntry *dte = deps_table->getEntry(output);
+    wait();
     if (!dte) {
       deps_table->addAddr(output, true);
+      wait();
     }
     else {
       dte->addTask(t);
+      wait();
       d++;
       if (!dte->getIsOut()) {
         dte->setWw(true);
+        wait();
       }
     }
   }

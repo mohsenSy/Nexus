@@ -25,20 +25,20 @@ class TableEntry {
     bool used; // true when the entry is used
     int id;
     T *data;
-    sc_mutex* m;
+    //sc_mutex* m;
   public:
     TableEntry(int id) {
       this->id = id;
       used = false;
       data = nullptr;
-      m = new sc_mutex();
+      //m = new sc_mutex();
     }
 
     TableEntry(int id, T *data) {
       this->id = id;
       used = data == nullptr ? false : true;
       this->data = data;
-      m = new sc_mutex();
+      //m = new sc_mutex();
     }
     // Returns true when the entry is used and false otherwise
     bool get_used(){
@@ -53,46 +53,46 @@ class TableEntry {
 
     // Sets the used attribute
     void set_used(bool used) {
-      m->lock();
+      //m->lock();
       this->used = used;
-      m->unlock();
+      //m->unlock();
     }
     void set_id(int id) {
-      m->lock();
+      //m->lock();
       this->id = id;
-      m->unlock();
+      //m->unlock();
     }
     void set_data(T* data) {
-      m->lock();
+      //m->lock();
       this->data = data;
-      m->unlock();
+      //m->unlock();
     }
 };
 
 
 template <class T>
 class Table {
-  private:
-    sc_mutex* m;
+  //private:
+    //sc_mutex* m;
   protected:
     TableEntry<T>** entries;
     int count;
     TableEntry<T> *get_entry(int id) {
-      m->lock();
+      //m->lock();
       for (int i = 0; i < count; i++) {
         if (entries[i] != nullptr && entries[i]->get_data() != nullptr && entries[i]->get_used() && entries[i]->get_id() == id) {
-          m->unlock();
+          //m->unlock();
           return entries[i];
         }
       }
-      m->unlock();
+      //m->unlock();
       return nullptr;
     }
   public:
     Table(int count) {
       entries = new TableEntry<T>*[count];
       this->count = count;
-      m = new sc_mutex();
+      //m = new sc_mutex();
     }
 
     int get_count() {
@@ -100,7 +100,7 @@ class Table {
     }
 
     bool has_empty_entries() {
-      m->lock();
+      //m->lock();
       for (int i = 0; i < count; i++) {
         if (entries[i] == nullptr) {
           return true;
@@ -109,27 +109,27 @@ class Table {
           return true;
         }
       }
-      m->unlock();
+      //m->unlock();
       return false;
     }
 
     T *operator[](int index) {
-      m->lock();
+      //m->lock();
       if (index < 0) {
-        m->unlock();
+        //m->unlock();
         return nullptr;
       }
       if (entries[index] != nullptr) {
-        m->unlock();
+        //m->unlock();
         return entries[index]->get_data();
       }
-      m->unlock();
+      //m->unlock();
       return nullptr;
     }
     bool add_entry(T *en, int id) {
       // Adds en to the array of entries
       // Find a valid entry
-      m->lock();
+      //m->lock();
       for (int i = 0; i < count; i++) {
         if (entries[i] == nullptr) {
           // Add a new Entry
@@ -137,7 +137,7 @@ class Table {
           //te->set_used(true);
           //te->set_data(en);
           entries[i] = te;
-          m->unlock();
+          //m->unlock();
           return true;
         }
         if (!entries[i]->get_used()) {
@@ -145,11 +145,11 @@ class Table {
           entries[i]->set_data(en);
           entries[i]->set_used(true);
           entries[i]->set_id(id);
-          m->unlock();
+          //m->unlock();
           return true;
         }
       }
-      m->unlock();
+      //m->unlock();
       return false;
     }
     T *get_data(int id) {
@@ -157,15 +157,15 @@ class Table {
       return t == nullptr ? nullptr : t->get_data();
     }
     bool delete_entry(int id) {
-      m->lock();
+      //m->lock();
       TableEntry<T> *t = this->get_entry(id);
       if (t == nullptr) {
-        m->unlock();
+        //m->unlock();
         return false;
       }
       t->set_data(nullptr);
       t->set_used(false);
-      m->unlock();
+      //m->unlock();
       return true;
     }
     void print_entries() {

@@ -11,44 +11,47 @@ namespace nexus2 {
     private:
       std::vector<task> tasks;
       int size;
-      sc_mutex* m;
+      //sc_mutex* m;
     public:
       KickOfList() {
         tasks = std::vector<task>();
         size = 0;
-        m = new sc_mutex();
+        //m = new sc_mutex();
+        //if ( m == nullptr) {
+        //  cout << "Error in new" << endl;
+        //}
       }
       bool push(task t) {
-        m->lock();
+        //m->lock();
         if ( size < NEXUS1_KICK_OFF_LIST_SIZE ) {
           tasks.push_back(t);
           size++;
-          m->unlock();
+          //m->unlock();
           return true;
         }
-        m->unlock();
+        //m->unlock();
         return false;
       }
       void pop() {
-        m->lock();
+        //m->lock();
         if (!tasks.empty()) {
           tasks.erase(tasks.begin());
           size--;
         }
-        m->unlock();
+        //m->unlock();
       }
 
       void delete_task(int id) {
-        m->lock();
+        //m->lock();
         if (tasks.empty()) {
-          m->unlock();
+          //m->unlock();
           return;
         }
         if (tasks[0].id == id) {
           tasks.erase(tasks.begin());
           size--;
         }
-        m->unlock();
+        //m->unlock();
       }
 
       bool empty() {
@@ -62,12 +65,12 @@ namespace nexus2 {
       }
 
       task get_task(int index) {
-        m->lock();
+        //m->lock();
         if (index >= 0 && index < size) {
-          m->unlock();
+          //m->unlock();
           return tasks[index];
         }
-        m->unlock();
+        //m->unlock();
         task temp;
         return temp;
       }
@@ -190,7 +193,7 @@ namespace nexus2 {
       int rdrs;
       bool ww;
       KickOfList list;
-      sc_mutex *m;
+      //sc_mutex *m;
     public:
       DependenceTableEntry(mem_addr addr, bool isOut = false, int rdrs = 1, bool ww = false) {
         this->addr = addr;
@@ -198,34 +201,34 @@ namespace nexus2 {
         this->rdrs = rdrs;
         this->ww = ww;
         this->list = KickOfList();
-        this->m = new sc_mutex();
+        //this->m = new sc_mutex();
       }
       bool getIsOut() {
-        m->lock();
+        //m->lock();
         bool b = isOut;
-        m->unlock();
+        //m->unlock();
         return b;
       }
       bool getWw() {
-        m->lock();
+        //m->lock();
         bool b = ww;
-        m->unlock();
+        //m->unlock();
         return b;
       }
       void incRdrs(int i = 1) {
-        m->lock();
+        //m->lock();
         rdrs += i;
-        m->unlock();
+        //m->unlock();
       }
       void decRdrs(int i = 1) {
-        m->lock();
+        //m->lock();
         rdrs -= i;
-        m->unlock();
+        //m->unlock();
       }
       int getRdrs() {
-        m->lock();
+        //m->lock();
         int r = rdrs;
-        m->unlock();
+        //m->unlock();
         return r;
       }
       void addTask(task &t) {
@@ -237,9 +240,9 @@ namespace nexus2 {
         return t;
       }
       void setWw(bool b) {
-        m->lock();
+        //m->lock();
         ww = b;
-        m->unlock();
+        //m->unlock();
       }
       int size() {
         return list.get_size();
