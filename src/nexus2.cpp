@@ -4,6 +4,12 @@ using namespace nexus2;
 
 #ifdef DEBUG
 void nexus::debug_print(int d) {
+  if (d == 1) {
+    task_pool->print_entries();
+  }
+  else if (d == 2) {
+    deps_table->print_entries();
+  }
 }
 void nexus::debug_thread() {
   while(true) {
