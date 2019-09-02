@@ -155,6 +155,7 @@ void nexus::deleteTask(task& t) {
         task t = deps_table->pop(input);
         wait();
         task_pool->decDeps(t);
+        PRINTL("Decrement deps for task %d", t.id);
         wait();
       }
     }
@@ -175,7 +176,7 @@ void nexus::deleteTask(task& t) {
         //deps_table->print_entries();
         task_pool->decDeps(t);
         wait();
-        PRINTL("Decrease deps for %d", t.id);
+        PRINTL("Decrease deps for task %d", t.id);
         if (check_task_output(t, output)) {
           break;
         }
@@ -185,6 +186,7 @@ void nexus::deleteTask(task& t) {
     }
   }
   task_pool->deleteTask(t);
+  PRINTL("Deleted task %d", t.id);
   wait();
 }
 
@@ -193,7 +195,7 @@ void nexus::scheduleReadyTasks() {
     TaskPoolEntry* tpe = task_pool->getEntryByIndex(i);
     if (tpe) {
       wait();
-      if (tpe->getDc() == 0 && !tpe->getSent()) {
+      if (tpe->getDc() == 0 && !tpe->getSent() && tpe->getDepsReady()) {
         wait();
         global_ready_tasks.nb_write(tpe->getTask());
       }

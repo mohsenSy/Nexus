@@ -89,6 +89,7 @@ namespace nexus2 {
       task t;
       bool busy;
       bool sent;
+      bool depsReady;
       int dc;
       sc_mutex *m;
     public:
@@ -97,6 +98,7 @@ namespace nexus2 {
         busy = false;
         dc = 0;
         sent = false;
+        depsReady = false;
         m = new sc_mutex();
       }
       task getTask() {
@@ -122,6 +124,7 @@ namespace nexus2 {
       void setDc(int d) {
         m->lock();
         dc = d;
+        depsReady = true;
         m->unlock();
       }
       void decDeps(int i = 1) {
@@ -134,6 +137,9 @@ namespace nexus2 {
       }
       void setSent(bool s) {
         sent = s;
+      }
+      bool getDepsReady() {
+        return depsReady;
       }
       void print() {
         cout << "id: " << t.id << " dc: " << dc << endl;
