@@ -15,6 +15,10 @@
 
 #define LOG(file_name, fmt, ...) printll(__FILE__, name(), file_name, fmt, __VA_ARGS__);
 
+
+void print_once(int, const char* fmt...);
+void reset_printe_once(int);
+
 void printl(const char* file_name, const char* module_name, const char* fmt...);
 void printl(const char* file_name,const int line, const char* module_name, const char* fmt...);
 void printll(const char* file_name, const char* module_name, std::string name, const char* fmt...);

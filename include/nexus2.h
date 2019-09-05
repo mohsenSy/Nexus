@@ -96,7 +96,7 @@ namespace nexus2 {
       TaskPoolEntry(task &t) {
         this->t = t;
         busy = false;
-        dc = 0;
+        dc = -1;
         sent = false;
         depsReady = false;
         m = new sc_mutex();
@@ -201,10 +201,15 @@ namespace nexus2 {
       KickOfList list;
       //sc_mutex *m;
     public:
-      DependenceTableEntry(mem_addr addr, bool isOut = false, int rdrs = 1, bool ww = false) {
+      DependenceTableEntry(mem_addr addr, bool isOut = false, int rdrs = 0, bool ww = false) {
         this->addr = addr;
         this->isOut = isOut;
-        this->rdrs = rdrs;
+        if (isOut) {
+          this->rdrs = 0;
+        }
+        else {
+          this->rdrs = 1;
+        }
         this->ww = ww;
         this->list = KickOfList();
         //this->m = new sc_mutex();
@@ -214,6 +219,9 @@ namespace nexus2 {
         bool b = isOut;
         //m->unlock();
         return b;
+      }
+      mem_addr getAddr() {
+        return addr;
       }
       bool getWw() {
         //m->lock();
@@ -266,7 +274,8 @@ namespace nexus2 {
       DependenceTable(int c) : Table<DependenceTableEntry>(c) {}
       bool addAddr(mem_addr addr, bool isOut = false) {
         DependenceTableEntry *dte = new DependenceTableEntry(addr, isOut);
-        return add_entry(dte, *(int *)&addr);
+        int id = *(int *)&addr;
+        return add_entry(dte, id);
       }
       DependenceTableEntry* getEntry(mem_addr addr) {
         return get_data(*(int *)&addr);
@@ -276,6 +285,15 @@ namespace nexus2 {
         DependenceTableEntry* dte = get_data(id);
         if (dte) {
           dte->decRdrs();
+          return dte->getRdrs();
+        }
+        return -100;
+      }
+      int incRdrs(mem_addr addr) {
+        int id = *(int*)&addr;
+        DependenceTableEntry* dte = get_data(id);
+        if (dte) {
+          dte->incRdrs();
           return dte->getRdrs();
         }
         return -100;
@@ -345,6 +363,7 @@ namespace nexus2 {
     sc_vector<sc_fifo<task> > ci_ready_tasks;
     sc_vector<sc_fifo<task> > ci_finished_tasks;
     sc_mutex core_mutex;
+    sc_mutex deps_table_mutex;
     //sc_fifo<task> task_queue; // Buffer for tasks ready for execution.
 
     // ports for cores

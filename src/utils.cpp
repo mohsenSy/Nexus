@@ -4,6 +4,7 @@
 
 #include <task.h>
 
+int nums[1024];
 
 void printl(const char* file_name, const char* module_name, const char* fmt...){
   cout << "@" << sc_time_stamp() << ": " << file_name << ":" << module_name <<  "  ";
@@ -105,6 +106,49 @@ void printll(const char* file_name, const char* module_name,std::string name, co
   ofile << std::endl;
   va_end(args);
   ofile.close();
+}
+
+void reset_printe_once(int n) {
+  cout << "@" << sc_time_stamp() << ": " << nums[n] << " times" << endl;
+  nums[n] = 0;
+}
+
+void print_once(int n, const char* fmt...){
+  if (nums[n] >= 1) {
+    nums[n]++;
+    return;
+  }
+  nums[n]++;
+  cout << "@" << sc_time_stamp() << ": ";
+  va_list args;
+  va_start(args, fmt);
+
+  while (*fmt != '\0') {
+      if (*fmt == '%' && *(fmt+1) == 'd') {
+          int i = va_arg(args, int);
+          std::cout << i;
+          fmt++;
+      } else if (*fmt == '%' && *(fmt+1) == 'c') {
+          // note automatic conversion to integral type
+          int c = va_arg(args, int);
+          std::cout << static_cast<char>(c);
+          fmt++;
+      } else if (*fmt == '%' && *(fmt+1) == 'f') {
+          double d = va_arg(args, double);
+          std::cout << d;
+          fmt++;
+      } else if (*fmt == '%' && *(fmt+1) == 's') {
+        char *s = va_arg(args, char *);
+        std::cout << s;
+        fmt++;
+      }
+      else {
+        std::cout << *fmt;
+      }
+      ++fmt;
+  }
+  std::cout << std::endl;
+  va_end(args);
 }
 
 void read_tasks(std::string filename, std::vector<task> * tasks) {

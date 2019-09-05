@@ -156,6 +156,14 @@ class Table {
       TableEntry<T> *t = this->get_entry(id);
       return t == nullptr ? nullptr : t->get_data();
     }
+    void set_data(int id, T* data) {
+      for (int i = 0; i < count; i++) {
+        if (entries[i] && entries[i]->get_id() == id) {
+          TableEntry<T> *te = new TableEntry<T>(id, data);
+          entries[i] = te;
+        }
+      }
+    }
     bool delete_entry(int id) {
       //m->lock();
       TableEntry<T> *t = this->get_entry(id);

@@ -46,9 +46,11 @@ void board::receiveTask() {
         // The task buffer is full and cannot receive new tasks
         rdy.write(false);
         //PRINTL("Board task fifo is full", "");
+        print_once(0, "Board task fifo is full cannot receive task %d", t.id);
         wait();
         Stats::inc_board_buffer_wait_cycles();
       }
+      reset_printe_once(0);
       PRINTL("board::receiveTask: Task %d was written to task fifo", t.id);
       rdy.write(true);
       t_in_f.write(true);
@@ -68,8 +70,10 @@ void board::send_task_nexus(task t) {
   wait();
   // Make sure the task is read by nexus
   while (t_in_f_sig != true) {
+    print_once(1, "Cannot send task %d to nexus", t.id);
     wait();
   }
+  reset_printe_once(1);
   PRINTL("board::send_task_nexus: Task %d was sent to nexus", t.id);
   t_in_v_sig = false;
   wait();

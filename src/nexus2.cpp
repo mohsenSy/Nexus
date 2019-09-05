@@ -32,8 +32,10 @@ void nexus::getTDs() {
         wait();
         while(!tds_buffer.nb_write(t)) {
           rdy.write(false);
+          print_once(2, "Nexus TDs buffer is full cannot receive new task %d", t.id);
           wait();
         }
+        reset_printe_once(2);
         PRINTL("received task %d", t.id);
         t_in_f.write(true);
         rdy.write(true);
@@ -52,11 +54,16 @@ void nexus::writeTP() {
     } while(!tds_buffer.nb_read(t));
     PRINTL("Writing task %d to task pool", t.id);
     while(!task_pool->addTask(t)) {
+      print_once(3, "Cannot add new task %d to nexus task pool", t.id);
       wait();
     }
+    reset_printe_once(3);
     do {
+      print_once(4, "Cannot add new task %d", t.id);
+      PRINTL("Cannot add new task %d", t.id);
       wait();
     } while(!new_tasks.nb_write(t));
+    reset_printe_once(4);
     PRINTL("Task %d was added to the pool", t.id);
     wait();
   }
@@ -68,13 +75,21 @@ void nexus::checkDeps() {
     do {
       wait();
     } while(!new_tasks.nb_read(t));
+    deps_table_mutex.lock();
+    wait();
     int deps = checkDeps(t);
     task_pool->setDc(t, deps);
+    deps_table_mutex.unlock();
+    DependenceTableEntry* dte = deps_table->get_data(0);
+    wait();
+    deps_table->set_data(0, dte);
     PRINTL("Deps for task %d are %d", t.id, deps);
     if (deps == 0) {
       do {
+        print_once(5, "Cannot add task %d to global ready queue", t.id);
         wait();
       } while(!global_ready_tasks.nb_write(t));
+      reset_printe_once(5);
     }
     wait();
   }
@@ -98,16 +113,22 @@ void nexus::send_task_core(task &t) {
     return;
   }
   core_mutex.lock();
+  wait();
   while(!rdys[currentCore]) {
     wait();
+    print_once(6, "Waiting for a ready core to send task %d", t.id);
     currentCore = ++currentCore % CORE_NUM;
   }
+  reset_printe_once(6);
   PRINTL("Sending task %d to core %d", t.id, currentCore);
   t_ins[currentCore].write(t);
   t_in_vs[currentCore].write(true);
   do {
+    print_once(7, "Waiting for core %d to read task %d", currentCore, t.id);
     wait();
   }while(!t_in_fs[currentCore].read());
+  reset_printe_once(7);
+  LOG(name(), "Sent task %d to core %d", t.id, currentCore);
   t_in_vs[currentCore].write(false);
   if (first) {
     first = false;
@@ -116,9 +137,12 @@ void nexus::send_task_core(task &t) {
     first = true;
     currentCore = ++currentCore % CORE_NUM;
   }
-  task_pool->setSent(t, true);
+  deps_table_mutex.lock();
   wait();
+  task_pool->setSent(t, true);
+  deps_table_mutex.unlock();
   core_mutex.unlock();
+  wait();
 }
 
 bool nexus::check_task_input(task &t, mem_addr addr) {
@@ -141,6 +165,8 @@ bool nexus::check_task_output(task &t, mem_addr addr) {
 
 void nexus::deleteTask(task& t) {
   PRINTL("Deleteing task %d from nexus tables", t.id);
+  deps_table_mutex.lock();
+  wait();
   for (int i = 0; i < t.input_args; i++) {
     mem_addr input = t.get_input_arg(i);
     if (!check_task_output(t, input)) {
@@ -180,12 +206,13 @@ void nexus::deleteTask(task& t) {
         if (check_task_output(t, output)) {
           break;
         }
-        deps_table->decRdrs(output);
+        deps_table->incRdrs(output);
         wait();
       }
     }
   }
   task_pool->deleteTask(t);
+  deps_table_mutex.unlock();
   PRINTL("Deleted task %d", t.id);
   wait();
 }
@@ -197,7 +224,9 @@ void nexus::scheduleReadyTasks() {
       wait();
       if (tpe->getDc() == 0 && !tpe->getSent() && tpe->getDepsReady()) {
         wait();
-        global_ready_tasks.nb_write(tpe->getTask());
+        if (!global_ready_tasks.nb_write(tpe->getTask())) {
+          return;
+        }
       }
     }
   }
@@ -223,12 +252,15 @@ void nexus::handleFinished() {
       if (t_out_vs[i].read()) {
         PRINTL("Reading finished task from core %d", i);
         task t = t_outs[i].read();
+        LOG(name(), "Finished task %d from core %d", t.id, i);
         t_out_fs[i].write(true);
         wait();
         t_out_fs[i].write(false);
         do {
+          print_once(8, "Cannot add finished task %d to queue", t.id);
           wait();
         }while(!finished_tasks.nb_write(t));
+        reset_printe_once(8);
         wait();
       }
       core_mutex.unlock();
