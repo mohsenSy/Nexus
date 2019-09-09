@@ -5,10 +5,10 @@ using namespace nexus2;
 #ifdef DEBUG
 void nexus::debug_print(int d) {
   if (d == 1) {
-    task_pool->print_entries();
+    task_pool->dump();
   }
   else if (d == 2) {
-    deps_table->print_entries();
+    deps_table->dump();
   }
 }
 void nexus::debug_thread() {
@@ -80,9 +80,9 @@ void nexus::checkDeps() {
     int deps = checkDeps(t);
     task_pool->setDc(t, deps);
     deps_table_mutex.unlock();
-    DependenceTableEntry* dte = deps_table->get_data(0);
+    //DependenceTableEntry* dte = deps_table->get_data(0);
     wait();
-    deps_table->set_data(0, dte);
+    //deps_table->set_data(0, dte);
     PRINTL("Deps for task %d are %d", t.id, deps);
     if (deps == 0) {
       do {
@@ -196,10 +196,10 @@ void nexus::deleteTask(task& t) {
     else {
       while(deps_table->getListSize(output) > 0) {
         PRINTL("Processing output %d", output);
-        //deps_table->print_entries();
+        //deps_table->dump();
         task t = deps_table->pop(output);
         wait();
-        //deps_table->print_entries();
+        //deps_table->dump();
         task_pool->decDeps(t);
         wait();
         PRINTL("Decrease deps for task %d", t.id);
@@ -218,15 +218,13 @@ void nexus::deleteTask(task& t) {
 }
 
 void nexus::scheduleReadyTasks() {
-  for (int i = 0; i < NEXUS2_TASK_NUM; i++) {
-    TaskPoolEntry* tpe = task_pool->getEntryByIndex(i);
-    if (tpe) {
+  for (auto it = task_pool->begin(); it != task_pool->end(); it++) {
+    TaskPoolEntry tpe = *it;
+    wait();
+    if (tpe.getDc() == 0 && !tpe.getSent() && tpe.getDepsReady()) {
       wait();
-      if (tpe->getDc() == 0 && !tpe->getSent() && tpe->getDepsReady()) {
-        wait();
-        if (!global_ready_tasks.nb_write(tpe->getTask())) {
-          return;
-        }
+      if (!global_ready_tasks.nb_write(tpe.getTask())) {
+        return;
       }
     }
   }

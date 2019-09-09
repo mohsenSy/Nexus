@@ -9,182 +9,69 @@
 #ifndef __TABLE__H
 #define __TABLE__H
 
-#include <systemc.h>
-
-
-#include <vector>
 #include <iostream>
+#include <list>
 
-#include <types.h>
-#include <task.h>
-#include <parameters.h>
-
-template <class T>
-class TableEntry {
-  private:
-    bool used; // true when the entry is used
-    int id;
-    T *data;
-    //sc_mutex* m;
-  public:
-    TableEntry(int id) {
-      this->id = id;
-      used = false;
-      data = nullptr;
-      //m = new sc_mutex();
-    }
-
-    TableEntry(int id, T *data) {
-      this->id = id;
-      used = data == nullptr ? false : true;
-      this->data = data;
-      //m = new sc_mutex();
-    }
-    // Returns true when the entry is used and false otherwise
-    bool get_used(){
-      return this->used;
-    }
-    int get_id() {
-      return this->id;
-    }
-    T *get_data() {
-      return this->data;
-    }
-
-    // Sets the used attribute
-    void set_used(bool used) {
-      //m->lock();
-      this->used = used;
-      //m->unlock();
-    }
-    void set_id(int id) {
-      //m->lock();
-      this->id = id;
-      //m->unlock();
-    }
-    void set_data(T* data) {
-      //m->lock();
-      this->data = data;
-      //m->unlock();
-    }
-};
-
+using namespace std;
 
 template <class T>
 class Table {
-  //private:
-    //sc_mutex* m;
-  protected:
-    TableEntry<T>** entries;
-    int count;
-    TableEntry<T> *get_entry(int id) {
-      //m->lock();
-      for (int i = 0; i < count; i++) {
-        if (entries[i] != nullptr && entries[i]->get_data() != nullptr && entries[i]->get_used() && entries[i]->get_id() == id) {
-          //m->unlock();
-          return entries[i];
+  private:
+    int size;
+    typename list<T>::iterator get(const T &en) {
+      for (auto it = entries.begin(); it != entries.end(); it++) {
+        if (*it == en) {
+          return it;
         }
       }
-      //m->unlock();
-      return nullptr;
+      return entries.end();
     }
   public:
-    Table(int count) {
-      entries = new TableEntry<T>*[count];
-      this->count = count;
-      //m = new sc_mutex();
+    typename list<T>::iterator begin() {
+      return entries.begin();
     }
-
-    int get_count() {
-      return this->count;
+    typename list<T>::iterator end() {
+      return entries.end();
     }
-
-    bool has_empty_entries() {
-      //m->lock();
-      for (int i = 0; i < count; i++) {
-        if (entries[i] == nullptr) {
-          return true;
-        }
-        if (!entries[i]->get_used()) {
-          return true;
-        }
+    list<T> entries;
+    T get_entry(const T &en) {
+      auto it = get(en);
+      if (it != entries.end()) {
+        return *it;
       }
-      //m->unlock();
-      return false;
+      return T();
     }
-
-    T *operator[](int index) {
-      //m->lock();
-      if (index < 0) {
-        //m->unlock();
-        return nullptr;
+    T *find_entry(const T &en) {
+      auto it = get(en);
+      if (it != entries.end()) {
+        return &(*it);
       }
-      if (entries[index] != nullptr) {
-        //m->unlock();
-        return entries[index]->get_data();
-      }
-      //m->unlock();
       return nullptr;
     }
-    bool add_entry(T *en, int id) {
-      // Adds en to the array of entries
-      // Find a valid entry
-      //m->lock();
-      for (int i = 0; i < count; i++) {
-        if (entries[i] == nullptr) {
-          // Add a new Entry
-          TableEntry<T> *te = new TableEntry<T>(id, en);
-          //te->set_used(true);
-          //te->set_data(en);
-          entries[i] = te;
-          //m->unlock();
-          return true;
-        }
-        if (!entries[i]->get_used()) {
-          // The entry exists and is not used
-          entries[i]->set_data(en);
-          entries[i]->set_used(true);
-          entries[i]->set_id(id);
-          //m->unlock();
-          return true;
-        }
+    bool add_entry(const T &en) {
+      if (entries.size() < size) {
+        entries.push_back(en);
+        return true;
       }
-      //m->unlock();
       return false;
     }
-    T *get_data(int id) {
-      TableEntry<T> *t = this->get_entry(id);
-      return t == nullptr ? nullptr : t->get_data();
+    void delete_entry(const T &en) {
+      entries.remove(en);
     }
-    void set_data(int id, T* data) {
-      for (int i = 0; i < count; i++) {
-        if (entries[i] && entries[i]->get_id() == id) {
-          TableEntry<T> *te = new TableEntry<T>(id, data);
-          entries[i] = te;
-        }
+    void set_entry(const T& old, const T& en) {
+      T *t = find_entry(old);
+      if (t) {
+        *t = en;
       }
     }
-    bool delete_entry(int id) {
-      //m->lock();
-      TableEntry<T> *t = this->get_entry(id);
-      if (t == nullptr) {
-        //m->unlock();
-        return false;
+
+    void dump(ostream& out = cout) {
+      for (auto it = entries.begin(); it != entries.end(); it++) {
+        out << *it << endl;
       }
-      t->set_data(nullptr);
-      t->set_used(false);
-      //m->unlock();
-      return true;
     }
-    void print_entries() {
-      for (int i = 0; i < count ; i++) {
-        if (entries[i] != nullptr && entries[i]->get_data() != nullptr && entries[i]->get_used() == true) {
-          std::cout << "index: " << i << std::endl;
-          std::cout << "id: " << entries[i]->get_id() << std::endl;
-          entries[i]->get_data()->print();
-          std::cout << "=========" << std::endl;
-        }
-      }
+    Table(int n) {
+      size = n;
     }
 };
 #endif

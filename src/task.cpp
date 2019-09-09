@@ -2,17 +2,6 @@
 #include <task.h>
 #include <cstdarg>
 
-// TODO: Remove this
-void task_descriptor::set_input_args(int n_args, ...) {
-  va_list ap;
-  va_start(ap, n_args);
-  in_args = new mem_addr[this->input_args];
-  for (int i = 0; i < n_args; i++) {
-    in_args[i] = va_arg(ap, mem_addr);
-  }
-  va_end(ap);
-}
-
 
 void task_descriptor::set_input_arg(int index, mem_addr addr) {
   if (in_args == NULL) {
@@ -23,16 +12,6 @@ void task_descriptor::set_input_arg(int index, mem_addr addr) {
   }
 }
 
-// TODO: Remove this
-void task_descriptor::set_output_args(int n_args, ...) {
-  va_list ap;
-  va_start(ap, n_args);
-  out_args = new mem_addr[this->output_args];
-  for (int i = 0; i < n_args; i++) {
-    out_args[i] = va_arg(ap, mem_addr);
-  }
-  va_end(ap);
-}
 
 void task_descriptor::set_output_arg(int index, mem_addr addr) {
   if (out_args == NULL) {

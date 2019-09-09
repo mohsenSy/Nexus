@@ -5,6 +5,7 @@
 #include <task.h>
 #include <systemc>
 #include <utils.h>
+#include <parameters.h>
 
 namespace nexus2 {
   class KickOfList {
@@ -74,14 +75,14 @@ namespace nexus2 {
         task temp;
         return temp;
       }
-
-      void print() {
-        for(int i = 0; i < tasks.size(); i++) {
+      friend ostream& operator <<(ostream &out, const KickOfList& t) {
+        for(int i = 0; i < t.tasks.size(); i++) {
           if (i == 0) {
-            std::cout << "Kick Of List:" << std::endl;
+            out << "Kick Of List:" << endl;
           }
-          std::cout << "i: " << i << " task: " << tasks[i].id << std::endl;
+          out << "index: " << i << " task: " << t << endl;
         }
+        return out;
       }
   };
   class TaskPoolEntry {
@@ -141,8 +142,13 @@ namespace nexus2 {
       bool getDepsReady() {
         return depsReady;
       }
-      void print() {
-        cout << "id: " << t.id << " dc: " << dc << endl;
+      friend ostream& operator <<(ostream &out, const TaskPoolEntry& t) {
+        out << "id: " << t.t.id << " dc: " << t.dc << " sent? " << t.sent << " deps ready? " << t.depsReady;
+        return out;
+      }
+
+      bool operator ==(const TaskPoolEntry& tt) {
+        return t.id == tt.t.id;
       }
   };
 
@@ -150,42 +156,32 @@ namespace nexus2 {
     public:
       TaskPool(int c) : Table<TaskPoolEntry>(c) {}
       bool addTask(task &t) {
-        TaskPoolEntry *tpe = new TaskPoolEntry(t);
-        return add_entry(tpe, t.id);
-      }
-      TaskPoolEntry* getEntryByIndex(int index) {
-        if (index < 0 || index > count) {
-          return nullptr;
-        }
-        if (entries[index] == nullptr) {
-          return nullptr;
-        }
-        return entries[index]->get_data();
+        TaskPoolEntry tpe(t);
+        return add_entry(tpe);
       }
       void deleteTask(task &t) {
-        delete_entry(t.id);
+        delete_entry(TaskPoolEntry(t));
       }
       void decDeps(task t) {
-        TaskPoolEntry* tpe = get_data(t.id);
+        TaskPoolEntry *tpe = find_entry(TaskPoolEntry(t));
         if (tpe) {
           tpe->decDeps();
         }
       }
       void setDc(task &t, int deps) {
-        TaskPoolEntry* tpe = get_data(t.id);
+        TaskPoolEntry* tpe = find_entry(TaskPoolEntry(t));
         if (tpe) {
           tpe->setDc(deps);
         }
       }
       void setSent(task& t, bool b) {
-        TaskPoolEntry* tpe = get_data(t.id);
+        TaskPoolEntry* tpe = find_entry(TaskPoolEntry(t));
         if (tpe) {
-          cout << "Task " << t.id << " is set to sent " << b << endl;
           tpe->setSent(b);
         }
       }
       bool getSent(task& t) {
-        TaskPoolEntry* tpe = get_data(t.id);
+        TaskPoolEntry* tpe = find_entry(TaskPoolEntry(t));
         if (tpe) {
           return tpe->getSent();
         }
@@ -261,9 +257,14 @@ namespace nexus2 {
       int size() {
         return list.get_size();
       }
-      void print() {
-        cout << "addr " << addr << " mode " << (isOut ? "output" : "input") << " readers " << rdrs << " writer waits " << ww << endl;
-        list.print();
+      friend ostream& operator <<(ostream &out, const DependenceTableEntry& t) {
+        out << "addr " << t.addr << " mode " << (t.isOut ? "output" : "input") << " readers " << t.rdrs << " writer waits " << t.ww << endl;
+        out << t.list;
+        return out;
+      }
+
+      bool operator ==(const DependenceTableEntry& tt) {
+        return addr == tt.addr;
       }
   };
 
@@ -273,16 +274,14 @@ namespace nexus2 {
     public:
       DependenceTable(int c) : Table<DependenceTableEntry>(c) {}
       bool addAddr(mem_addr addr, bool isOut = false) {
-        DependenceTableEntry *dte = new DependenceTableEntry(addr, isOut);
-        int id = *(int *)&addr;
-        return add_entry(dte, id);
+        DependenceTableEntry dte(addr, isOut);
+        return add_entry(dte);
       }
       DependenceTableEntry* getEntry(mem_addr addr) {
-        return get_data(*(int *)&addr);
+        return find_entry(DependenceTableEntry(addr));
       }
       int decRdrs(mem_addr addr) {
-        int id = *(int*)&addr;
-        DependenceTableEntry* dte = get_data(id);
+        DependenceTableEntry* dte = find_entry(DependenceTableEntry(addr));
         if (dte) {
           dte->decRdrs();
           return dte->getRdrs();
@@ -290,8 +289,7 @@ namespace nexus2 {
         return -100;
       }
       int incRdrs(mem_addr addr) {
-        int id = *(int*)&addr;
-        DependenceTableEntry* dte = get_data(id);
+        DependenceTableEntry* dte = find_entry(DependenceTableEntry(addr));
         if (dte) {
           dte->incRdrs();
           return dte->getRdrs();
@@ -299,37 +297,36 @@ namespace nexus2 {
         return -100;
       }
       bool getWw(mem_addr addr) {
-        int id = *(int*)&addr;
-        DependenceTableEntry* dte = get_data(id);
+        DependenceTableEntry* dte = find_entry(DependenceTableEntry(addr));
         if (dte) {
           return dte->getWw();
         }
         return false;
       }
       void deleteAddr(mem_addr addr) {
-        int id = *(int*)&addr;
-        delete_entry(id);
+        delete_entry(DependenceTableEntry(addr));
       }
       task pop(mem_addr addr) {
-        int id = *(int*)&addr;
-        DependenceTableEntry* dte = get_data(id);
+        DependenceTableEntry* dte = find_entry(DependenceTableEntry(addr));
         if (dte) {
           task t = dte->pop();
           return t;
         }
         task temp;
+        temp.id = 0;
         return temp;
       }
       int getListSize(mem_addr addr) {
-        int id = *(int*)&addr;
-        DependenceTableEntry* dte = get_data(id);
+        DependenceTableEntry* dte = find_entry(DependenceTableEntry(addr));
         if (dte) {
           return dte->size();
         }
         return -100;
       }
       void dump() {
-        print_entries();
+        for (auto it = entries.begin(); it != entries.end(); it++) {
+          cout << *it << endl;
+        }
       }
   };
 
