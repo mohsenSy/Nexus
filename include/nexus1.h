@@ -71,14 +71,14 @@ namespace nexus1 {
         m->unlock();
         return nullptr;
       }
-
-      void print() {
-        for(int i = 0; i < tasks.size(); i++) {
+      friend ostream& operator <<(ostream& out, const KickOfList& l) {
+        for(int i = 0; i < l.tasks.size(); i++) {
           if (i == 0) {
-            std::cout << "Kick Of List:" << std::endl;
+            out << "Kick Of List:" << endl;
           }
-          std::cout << "i: " << i << " task: " << tasks[i].id << std::endl;
+          out << "i: " << i << " task: " << l.tasks[i].id << endl;
         }
+        return out;
       }
   };
 
@@ -88,6 +88,12 @@ namespace nexus1 {
       KickOfList kick_of_list;
       sc_mutex* m;
     public:
+      ProducersTableEntry(mem_addr addr) {
+        this->addr = addr;
+        kick_of_list = KickOfList();
+        //kick_of_list.push(task());
+         m = new sc_mutex();
+      }
       ProducersTableEntry(mem_addr addr, task t) {
         this->addr = addr;
         kick_of_list = KickOfList();
@@ -128,10 +134,13 @@ namespace nexus1 {
       int size() {
         return kick_of_list.get_size();
       }
-
-      void print() {
-        std::cout << "addr: " << addr << std::endl;
-        kick_of_list.print();
+      friend ostream& operator <<(ostream& out, const ProducersTableEntry& pte) {
+        out << "addr: " << pte.addr << endl;
+        out << "list: " << pte.kick_of_list;
+        return out;
+      }
+      bool operator ==(const ProducersTableEntry& pte) {
+        return addr == pte.addr;
       }
   };
 
@@ -141,15 +150,7 @@ namespace nexus1 {
     public:
       ProducersTable(int count) : Table<ProducersTableEntry>(count) { m = new sc_mutex();}
       ProducersTableEntry *get_entry_for_addr(mem_addr addr) {
-        m->lock();
-        for (int i = 0; i < count; i++) {
-          if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data() && entries[i]->get_data()->get_addr() == addr) {
-            m->unlock();
-            return entries[i]->get_data();
-          }
-        }
-        m->unlock();
-        return nullptr;
+        return find_entry(ProducersTableEntry(addr));
       }
       bool add_task(mem_addr addr, task t) {
         m->lock();
@@ -158,13 +159,18 @@ namespace nexus1 {
           m->unlock();
           return pte->add_task(t);
         }
-        pte = new ProducersTableEntry(addr, t);
         m->unlock();
-        return add_entry(pte, *(int *)&addr);
+        return add_entry(ProducersTableEntry(addr, t));
       }
       void delete_task(int id) {
         m->lock();
-        for (int i = 0; i < count; i++) {
+        for (auto it = begin(); it != end(); it++) {
+          it->delete_task(id);
+          if (it->empty()) {
+            delete_entry(*it);
+          }
+        }
+        /*for (int i = 0; i < count; i++) {
           if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data()) {
             ProducersTableEntry* pte = entries[i]->get_data();
             pte->delete_task(id);
@@ -174,11 +180,8 @@ namespace nexus1 {
               delete_entry(id);
             }
           }
-        }
+        }*/
         m->unlock();
-      }
-      void print() {
-        print_entries();
       }
   };
 
@@ -252,10 +255,14 @@ namespace nexus1 {
         return *kick_of_list.get_task(index);
       }
 
+      friend ostream& operator << (ostream& out, const ConsumersTableEntry& ct) {
+        out << "addr: " << ct.addr << " deps: " << ct.deps << endl;
+        out << ct.kick_of_list << endl;
+        return out;
+      }
 
-      void print() {
-        std::cout << "addr: " << addr << " deps: " << deps << std::endl;
-        kick_of_list.print();
+      bool operator ==(const ConsumersTableEntry& cte) {
+        return addr == cte.addr;
       }
   };
 
@@ -265,15 +272,15 @@ namespace nexus1 {
     public:
       ConsumersTable(int count) : Table<ConsumersTableEntry>(count) { m = new sc_mutex();}
       ConsumersTableEntry *get_entry_for_addr(mem_addr addr) {
-        m->lock();
-        for (int i = 0; i < count; i++) {
+        return find_entry(ConsumersTableEntry(addr));
+        /*for (int i = 0; i < count; i++) {
           if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data() && entries[i]->get_data()->get_addr() == addr) {
             m->unlock();
             return entries[i]->get_data();
           }
         }
         m->unlock();
-        return nullptr;
+        return nullptr;*/
       }
       bool add_task(mem_addr addr, task t) {
         m->lock();
@@ -282,9 +289,9 @@ namespace nexus1 {
           m->unlock();
           return cte->add_task(t);
         }
-        cte = new ConsumersTableEntry(addr, t);
+        //cte = new ConsumersTableEntry(addr, t);
         m->unlock();
-        return add_entry(cte, *(int *)&addr);
+        return add_entry(ConsumersTableEntry(addr, t));
       }
       bool add_addr(mem_addr addr) {
         m->lock();
@@ -294,14 +301,20 @@ namespace nexus1 {
           m->unlock();
           return true;
         }
-        cte = new ConsumersTableEntry(addr);
+        //cte = new ConsumersTableEntry(addr);
         m->unlock();
-        return add_entry(cte, *(int *)&addr);
+        return add_entry(ConsumersTableEntry(addr));
       }
 
       void delete_task(int id) {
         m->lock();
-        for (int i = 0; i < count; i++) {
+        for (auto it = begin(); it != end(); it++) {
+          it->delete_task(id);
+          if (it->empty()) {
+            delete_entry(ConsumersTableEntry(it->get_addr()));
+          }
+        }
+        /*for (int i = 0; i < count; i++) {
           if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data()) {
             ConsumersTableEntry* cte = entries[i]->get_data();
             cte->delete_task(id);
@@ -311,7 +324,7 @@ namespace nexus1 {
               delete_entry(id);
             }
           }
-        }
+        }*/
         m->unlock();
       }
       bool is_kick_of_list_empty(mem_addr addr) {
@@ -320,9 +333,6 @@ namespace nexus1 {
           return cte->empty();
         }
         return true;
-      }
-      void print() {
-        print_entries();
       }
   };
 
@@ -337,6 +347,18 @@ namespace nexus1 {
     public:
       TaskTableEntry(task t) {
         this->t = t;
+        status = NEW;
+        deps = 0;
+        m = new sc_mutex();
+      }
+      TaskTableEntry(int id) {
+        t.id = id;
+        status = NEW;
+        deps = 0;
+        m = new sc_mutex();
+      }
+      TaskTableEntry() {
+        t.id = 0;
         status = NEW;
         deps = 0;
         m = new sc_mutex();
@@ -373,8 +395,12 @@ namespace nexus1 {
       bool is_ready() {
         return this->deps == 0;
       }
-      void print() {
-        std::cout << "task id: " << t.id << " status: " << status_array[this->status] << " deps: " << this->deps << std::endl;
+      friend ostream& operator << (ostream& out, const TaskTableEntry& tte) {
+        out << "task id: " << tte.t.id << " status: " << status_array[tte.status] << " deps: " << tte.deps << endl;
+        return out;
+      }
+      bool operator ==(const TaskTableEntry& tte) {
+        return tte.t.id == t.id;
       }
   };
 
@@ -384,8 +410,10 @@ namespace nexus1 {
     public:
       TaskTable(int count) : Table<TaskTableEntry>(count) { m = new sc_mutex();}
       task get_task(int id) {
-        m->lock();
-        task t;
+        //m->lock();
+        TaskTableEntry tte = Table::get_entry(TaskTableEntry(id));
+        return tte.get_task();
+        /*task t;
         t.id = 0;
         for (int i = 0; i < count; i++) {
           if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data() && entries[i]->get_data()->get_task().id == id) {
@@ -394,9 +422,9 @@ namespace nexus1 {
           }
         }
         m->unlock();
-        return t;
+        return t;*/
       }
-      TaskTableEntry* get_entry_by_index(int index) {
+      /*TaskTableEntry* get_entry_by_index(int index) {
         if (index < 0 || index > count) {
           return nullptr;
         }
@@ -404,26 +432,28 @@ namespace nexus1 {
           return nullptr;
         }
         return entries[index]->get_data();
-      }
+      }*/
       TaskTableEntry* get_entry(int id) {
-        m->lock();
-        for (int i = 0; i < count; i++) {
+        //m->lock();
+        return find_entry(TaskTableEntry(id));
+        /*for (int i = 0; i < count; i++) {
           if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data() && entries[i]->get_data()->get_task().id == id) {
             m->unlock();
             return entries[i]->get_data();
           }
         }
         m->unlock();
-        return nullptr;
+        return nullptr;*/
       }
       void dec_deps(int id) {
-        m->lock();
-        for (int i = 0; i < count; i++) {
+        //m->lock();
+        find_entry(TaskTableEntry(id))->dec_deps();
+        /*for (int i = 0; i < count; i++) {
           if (entries[i] != nullptr && entries[i]->get_used() && entries[i]->get_data() && entries[i]->get_data()->get_task().id == id) {
             entries[i]->get_data()->dec_deps();
           }
         }
-        m->unlock();
+        m->unlock();*/
       }
       void set_task_sent(task t) {
         m->lock();
@@ -433,11 +463,11 @@ namespace nexus1 {
       }
       void delete_task(int id) {
         m->lock();
-        delete_entry(id);
+        delete_entry(TaskTableEntry(id));
         m->unlock();
       }
-      int size() {
-        return count;
+      int count() {
+        return get_size();
       }
   };
 
@@ -450,6 +480,10 @@ namespace nexus1 {
         this->t = t;
         m = new sc_mutex();
       }
+      TaskPoolEntry(int id) {
+        t.id = id;
+        m = new sc_mutex();
+      }
       task get_task() {
         return this->t;
       }
@@ -458,8 +492,12 @@ namespace nexus1 {
         this->t = t;
         m->unlock();
       }
-      void print() {
-        std::cout << "task id: " << t.id << " inputs: " << t.input_args << " outputs: " << t.output_args << std::endl;
+      friend ostream& operator << (ostream& out, const TaskPoolEntry& tpe) {
+        out << "task id: " << tpe.t.id << " inputs: " << tpe.t.input_args << " outputs: " << tpe.t.output_args << std::endl;
+        return out;
+      }
+      bool operator == (const TaskPoolEntry& pte) {
+        return t.id == pte.t.id;
       }
   };
   class TaskPool : public Table<TaskPoolEntry> {
@@ -469,11 +507,11 @@ namespace nexus1 {
       TaskPool(int count) : Table<TaskPoolEntry>(count) { m = new sc_mutex();}
       void delete_task(int id) {
         m->lock();
-        delete_entry(id);
+        delete_entry(TaskPoolEntry(id));
         m->unlock();
       }
-      int size() {
-        return count;
+      int count() {
+        return get_size();
       }
   };
   SC_MODULE(nexus) {
@@ -516,14 +554,14 @@ namespace nexus1 {
     // Nexus1 threads
     void receive(); // Receive a new task and store it in receive buffer
     void load(); // Load a task from receive buffer to Task Pool and other tables
-    void add_to_task_table(task*);
-    int calculate_deps(task*);
+    void add_to_task_table(task&);
+    int calculate_deps(task&);
     void send_task();
 
-    int add_input_prod(mem_addr, task*);
-    int add_input_cons(mem_addr, task*);
-    int add_output_cons(mem_addr, task*);
-    int add_output_prod(mem_addr, task*);
+    int add_input_prod(mem_addr, task&);
+    int add_input_cons(mem_addr, task&);
+    int add_output_cons(mem_addr, task&);
+    int add_output_prod(mem_addr, task&);
     void check_output(mem_addr);
     void check_input(mem_addr);
     bool check_task_input(task, mem_addr);

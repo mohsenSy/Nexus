@@ -64,6 +64,12 @@ class Table {
         *t = en;
       }
     }
+    bool has_empty_entries() {
+      return entries.size() < size;
+    }
+    int get_size() {
+      return size;
+    }
 
     void dump(ostream& out = cout) {
       for (auto it = entries.begin(); it != entries.end(); it++) {

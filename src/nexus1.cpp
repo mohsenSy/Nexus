@@ -20,22 +20,22 @@ void nexus::debug_print(int d) {
     else if (d == 3) {
       // Print the task pool
       PRINTL("DEBUG: task_pool:","");
-      task_pool->print_entries();
+      cout << task_pool << endl;
     }
     else if (d == 4) {
       // Print the task table
       PRINTL("DEBUG: task_table:","");
-      task_table->print_entries();
+      cout << task_table << endl;
     }
     else if (d == 5) {
       // Print ConsumersTable
       PRINTL("DEBUG: consumers_table:","");
-      consumers_table->print_entries();
+      cout << consumers_table << endl;
     }
     else if (d == 6) {
       // Print ProducersTable
       PRINTL("DEBUG: producers_table:","");
-      producers_table->print_entries();
+      cout << producers_table << endl;
     }
   }
 }
@@ -79,16 +79,15 @@ void nexus::receive() {
 // Take tasks from the in_buffer and write them to tables (Task, Producers and Consumers Tables)
 void nexus::load() {
   while(true) {
-    task *t = new task;
-    while (!in_buffer.nb_read(*t)) {
+    task t = task();
+    while (!in_buffer.nb_read(t)) {
       wait();
     }
-    PRINTL("nexus::load: Adding task %d to task pool", t->id);
-    TaskPoolEntry *tpe = new TaskPoolEntry(*t);
-    while(!task_pool->add_entry(tpe, t->id)) {
+    PRINTL("nexus::load: Adding task %d to task pool", t.id);
+    while(!task_pool->add_entry(TaskPoolEntry(t))) {
       wait();
     }
-    PRINTL("nexus::load: Task %d was added to task pool", t->id);
+    PRINTL("nexus::load: Task %d was added to task pool", t.id);
     add_to_task_table(t);
     wait();
   }
@@ -113,38 +112,38 @@ void nexus::send_ready_task() {
   }
 }
 
-void nexus::add_to_task_table(task* t) {
-  TaskTableEntry* tte = new TaskTableEntry(*t);
-  PRINTL("nexus::add_to_task_table: calculate deps for task %d", t->id);
+void nexus::add_to_task_table(task& t) {
+  TaskTableEntry tte = TaskTableEntry(t);
+  PRINTL("nexus::add_to_task_table: calculate deps for task %d", t.id);
   while(!task_table->has_empty_entries()) {
     wait();
   }
   task_table_mutex.lock();
   int deps = calculate_deps(t);
-  tte->set_deps(deps);
+  tte.set_deps(deps);
   task_table_mutex.unlock();
-  PRINTL("nexus::add_to_task_table: Task %d has %d deps count", t->id, tte->get_deps());
-  while(!task_table->add_entry(tte, t->id)) {
+  PRINTL("nexus::add_to_task_table: Task %d has %d deps count", t.id, tte.get_deps());
+  while(!task_table->add_entry(tte)) {
     wait();
   }
-  PRINTL("nexus::add_to_task_table: Task %d added to table", t->id);
+  PRINTL("nexus::add_to_task_table: Task %d added to table", t.id);
   if (deps == 0) {
-    PRINTL("nexus::add_to_task_table: adding task %d to task queue", t->id);
-    while (!task_queue.nb_write(*t)) {
+    PRINTL("nexus::add_to_task_table: adding task %d to task queue", t.id);
+    while (!task_queue.nb_write(t)) {
       wait();
     }
-    PRINTL("nexus::add_to_task_table: Task %d was added to task queue", t->id);
+    PRINTL("nexus::add_to_task_table: Task %d was added to task queue", t.id);
   }
 }
 
-int nexus::add_input_prod(mem_addr input, task *t) {
+int nexus::add_input_prod(mem_addr input, task& t) {
   ProducersTableEntry* pr = producers_table->get_entry_for_addr(input);
   wait();
   if (pr != nullptr) {
     for (int i = 0; i < pr->size(); i++) {
       if (!check_task_input(pr->get_task(i), input)) {
         wait();
-        while(!pr->add_task(*t)) {
+        while(!pr->add_task(t)) {
           wait();
         }
         return 1;
@@ -154,7 +153,7 @@ int nexus::add_input_prod(mem_addr input, task *t) {
   return 0;
 }
 
-int nexus::add_input_cons(mem_addr input, task *t) {
+int nexus::add_input_cons(mem_addr input, task& t) {
   ProducersTableEntry *pte = producers_table->get_entry_for_addr(input);
   wait();
   if (pte == nullptr) {
@@ -176,7 +175,7 @@ int nexus::add_input_cons(mem_addr input, task *t) {
     wait();
     if (ct != nullptr) {
       wait();
-      while(!ct->add_task(*t)) {
+      while(!ct->add_task(t)) {
         wait();
       }
     }
@@ -185,28 +184,28 @@ int nexus::add_input_cons(mem_addr input, task *t) {
   return 0;
 }
 
-int nexus::add_output_prod(mem_addr output, task *t) {
+int nexus::add_output_prod(mem_addr output, task& t) {
   ProducersTableEntry* pt = producers_table->get_entry_for_addr(output);
   wait();
   if (pt != nullptr) {
     wait();
-    while(!pt->add_task(*t)) {
+    while(!pt->add_task(t)) {
       wait();
     }
     return 1;
   }
-  while(!producers_table->add_task(output, *t)) {
+  while(!producers_table->add_task(output, t)) {
     wait();
   }
   return 0;
 }
 
-int nexus::add_output_cons(mem_addr output, task *t) {
+int nexus::add_output_cons(mem_addr output, task& t) {
   ConsumersTableEntry* ct = consumers_table->get_entry_for_addr(output);
   wait();
   if (ct != nullptr) {
     wait();
-    while(!ct->add_task(*t)) {
+    while(!ct->add_task(t)) {
       wait();
     }
     return 1;
@@ -214,28 +213,28 @@ int nexus::add_output_cons(mem_addr output, task *t) {
   return 0;
 }
 
-int nexus::calculate_deps(task* t) {
+int nexus::calculate_deps(task& t) {
   // Here we fill data in producers and consumers tables
   int deps = 0;
 
-  for (int i = 0; i < t->input_args; i++) {
+  for (int i = 0; i < t.input_args; i++) {
     // Process each input arg
-    deps += add_input_prod(t->get_input_arg(i), t);
-    deps += add_input_cons(t->get_input_arg(i), t);
-    PRINTL("nexus::calculate_deps: deps for input %d task %d are %d", t->get_input_arg(i), t->id, deps);
+    deps += add_input_prod(t.get_input_arg(i), t);
+    deps += add_input_cons(t.get_input_arg(i), t);
+    PRINTL("nexus::calculate_deps: deps for input %d task %d are %d", t.get_input_arg(i), t.id, deps);
   }
 
-  for (int i = 0; i < t->output_args; i++) {
+  for (int i = 0; i < t.output_args; i++) {
     // Process each output arg
-    int outputDepsCons = add_output_cons(t->get_output_arg(i), t);
-    int outputDepsProd = add_output_prod(t->get_output_arg(i), t);
+    int outputDepsCons = add_output_cons(t.get_output_arg(i), t);
+    int outputDepsProd = add_output_prod(t.get_output_arg(i), t);
     if (outputDepsCons == 0) {
       deps += outputDepsProd;
-      PRINTL("nexus::calculate_deps: deps for output %d task %d are %d", t->get_output_arg(i), t->id, outputDepsProd);
+      PRINTL("nexus::calculate_deps: deps for output %d task %d are %d", t.get_output_arg(i), t.id, outputDepsProd);
     }
     else {
       deps += outputDepsCons;
-      PRINTL("nexus::calculate_deps: deps for output %d task %d are %d", t->get_output_arg(i), t->id, outputDepsCons);
+      PRINTL("nexus::calculate_deps: deps for output %d task %d are %d", t.get_output_arg(i), t.id, outputDepsCons);
     }
   }
   return deps;
@@ -335,7 +334,14 @@ void nexus::delete_task(task *t) {
 
 void nexus::schedule_tasks() {
   // Here I loop through all tasks and send ready ones
-  for (int i = 0; i < task_table->size(); i++) {
+  for (auto it = task_table->begin(); it != task_table->end(); it++) {
+    if (it->get_deps() == 0 && it->get_status() != TaskStatus::SENT) {
+      while(!task_queue.nb_write(it->get_task())) {
+        wait();
+      }
+    }
+  }
+  /*for (int i = 0; i < task_table->size(); i++) {
     auto tte = task_table->get_entry_by_index(i);
     if (tte) {
       if (tte->get_deps() == 0 && tte->get_status() != TaskStatus::SENT) {
@@ -344,7 +350,7 @@ void nexus::schedule_tasks() {
         }
       }
     }
-  }
+  }*/
 }
 
 void nexus::read_finished() {
