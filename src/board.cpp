@@ -5,6 +5,9 @@
 #include <stats.h>
 
 void board::send_finished_nexus(task t) {
+  if (!nex) {
+    return;
+  }
   t_f_in_v_sig = true;
   t_f_in_sig = t;
   PRINTL("board::send_finished_nexus: Sending finished task %d to Nexus", t.id);
