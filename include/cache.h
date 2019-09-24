@@ -68,8 +68,19 @@ SC_MODULE(l1cache) {
   // operation type
   sc_in<bool> rw; // true means read and false means write
   // If data not available in cache read from l2cache
-  //sc_out<bool> memory_request;
-  //sc_in<bool> memory_accept;
+  sc_out<bool> memory_request;
+  sc_in<bool> memory_accept;
+
+  // l2cache ports
+  sc_out<bool> l2_addr_v;
+  sc_in<bool> l2_addr_f;
+  sc_out<mem_addr> l2_addr;
+  // Write/read data
+  sc_inout<bool> l2_data_v;
+  sc_inout<bool> l2_data_f;
+  sc_inout<sc_int<32> > l2_data;
+  // operation type
+  sc_out<bool> l2_rw; // true means read and false means write
 
   int size;
   AddressTable at;
@@ -80,6 +91,8 @@ SC_MODULE(l1cache) {
   void read_data();
   void write_data();
 
+  int read_data_l2cache(mem_addr);
+
   SC_HAS_PROCESS(l1cache);
 
   l1cache(sc_module_name name, int s = 32) : sc_module(name), at(s) {
@@ -88,6 +101,10 @@ SC_MODULE(l1cache) {
     data_v.initialize(false);
     data_f.initialize(false);
     data.initialize(0);
+    l2_addr_v.initialize(false);
+    l2_data_v.initialize(false);
+    l2_data_f.initialize(false);
+    l2_data.initialize(0);
 
     SC_CTHREAD(receive, clk.pos());
   }

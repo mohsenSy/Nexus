@@ -12,6 +12,7 @@
 #define L1CACHEDELAY 2
 #define L2CACHESIZE 320
 #define L2CACHECORENUM 8
+#define L2CACHEDELAY 4
 
 // Board parameters
 #define CORE_NUM 128 // Number of simulated cores in the System Board

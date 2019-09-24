@@ -23,8 +23,19 @@ public:
   sc_signal<bool, SC_MANY_WRITERS> memory_data_f_sig;
   sc_signal<sc_int<32>, SC_MANY_WRITERS> memory_data_sig;
   sc_signal<bool, SC_MANY_WRITERS> memory_rw_sig;
+  sc_signal<bool, SC_MANY_WRITERS> l1_memory_request_sig;
+  sc_signal<bool, SC_MANY_WRITERS> l1_memory_accept_sig;
+
+  sc_signal<bool, SC_MANY_WRITERS> l2_memory_addr_v_sig;
+  sc_signal<bool, SC_MANY_WRITERS> l2_memory_addr_f_sig;
+  sc_signal<mem_addr, SC_MANY_WRITERS> l2_memory_addr_sig;
+  sc_signal<bool, SC_MANY_WRITERS> l2_memory_data_v_sig;
+  sc_signal<bool, SC_MANY_WRITERS> l2_memory_data_f_sig;
+  sc_signal<sc_int<32>, SC_MANY_WRITERS> l2_memory_data_sig;
+  sc_signal<bool, SC_MANY_WRITERS> l2_memory_rw_sig;
 
   l1cache *m;
+  l2cache *l2;
   core *c;
   coreHelper(sc_module_name name) {
     clock = 0;
@@ -38,6 +49,27 @@ public:
     m->data_v(memory_data_v_sig);
     m->data_f(memory_data_f_sig);
     m->rw(memory_rw_sig);
+    m->memory_request(l1_memory_request_sig);
+    m->memory_accept(l1_memory_accept_sig);
+    m->l2_addr(l2_memory_addr_sig);
+    m->l2_addr_v(l2_memory_addr_v_sig);
+    m->l2_addr_f(l2_memory_addr_f_sig);
+    m->l2_data(l2_memory_data_sig);
+    m->l2_data_v(l2_memory_data_v_sig);
+    m->l2_data_f(l2_memory_data_f_sig);
+    m->l2_rw(l2_memory_rw_sig);
+
+    l2 = new l2cache("l2cache");
+    l2->clk(clock);
+    l2->addr(l2_memory_addr_sig);
+    l2->addr_v(l2_memory_addr_v_sig);
+    l2->addr_f(l2_memory_addr_f_sig);
+    l2->data(l2_memory_data_sig);
+    l2->data_v(l2_memory_data_v_sig);
+    l2->data_f(l2_memory_data_f_sig);
+    l2->rw(l2_memory_rw_sig);
+    l2->core_memory_request[0](l1_memory_request_sig);
+    l2->core_memory_accept[0](l1_memory_accept_sig);
 
     c = new core(name);
     c->clk(clock);
