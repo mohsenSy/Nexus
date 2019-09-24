@@ -37,25 +37,30 @@ void core::handle_finished(void) {
   }
 }
 
-void core::fetch_input(mem_addr addr) {
-  memory_request.write(true);
-  while(memory_accept == false) {
-    Stats::inc_memory_cycles();
-    wait();
-  }
-  memory_addr.write(addr);
+int core::fetch_input(mem_addr addr) {
+  memory_rw.write(true);
+  memory_data_f.write(false);
   memory_addr_v.write(true);
-  while(memory_addr_f == false) {
+  memory_addr.write(addr);
+  do {
     Stats::inc_memory_cycles();
+    PRINTL("Wait addr f", "");
     wait();
-  }
-  while(memory_data_rdy.read() == false) {
+  }while(!memory_addr_f.read());
+  memory_addr_v.write(false);
+  do {
     Stats::inc_memory_cycles();
+    //PRINTL("Wait data v", "");
     wait();
-  }
-  memory_request.write(false);
-  Stats::inc_memory_cycles();
-  wait();
+  } while(!memory_data_v.read());
+  int data = memory_data.read();
+  memory_data_f.write(true);
+  do {
+    Stats::inc_memory_cycles();
+    PRINTL("Wait not data v", "");
+    wait();
+  }while(memory_data_v.read());
+  memory_data_f.write(false);
 }
 
 void core::send_task(void) {

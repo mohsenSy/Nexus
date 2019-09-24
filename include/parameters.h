@@ -7,6 +7,12 @@
 // Memory Controller parameters
 #define MEM_FETCH_TIME 10 // Number of cycles required to read from memory
 
+// Memory cache parameters
+#define L1CACHESIZE 32
+#define L1CACHEDELAY 2
+#define L2CACHESIZE 320
+#define L2CACHECORENUM 8
+
 // Board parameters
 #define CORE_NUM 128 // Number of simulated cores in the System Board
 #define TASK_NUM 101 // Number of tasks buffered in system board for execution

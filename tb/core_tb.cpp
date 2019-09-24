@@ -2,8 +2,9 @@
 
 #include <task.h>
 #include <core.h>
-#include <memory.h>
+#include <cache.h>
 #include <types.h>
+#include <stats.h>
 
 class coreHelper {
 public:
@@ -15,36 +16,28 @@ public:
   sc_signal<bool> t_out_v_sig;
   sc_signal<bool> t_out_f_sig;
   sc_signal<bool> rdy_sig;
-  sc_signal<bool, SC_MANY_WRITERS> memory_rdy_sig;
-  sc_signal<mem_addr, SC_MANY_WRITERS> memory_addr_sig;
   sc_signal<bool, SC_MANY_WRITERS> memory_addr_v_sig;
   sc_signal<bool, SC_MANY_WRITERS> memory_addr_f_sig;
-  sc_signal<bool, SC_MANY_WRITERS> memory_data_rdy_sig;
-  sc_signal<bool> memory_request_sig;
-  sc_signal<bool> memory_accept_sig;
-  sc_vector<sc_signal<bool> > request_sigs;
-  sc_vector<sc_signal<bool> > accept_sigs;
+  sc_signal<mem_addr, SC_MANY_WRITERS> memory_addr_sig;
+  sc_signal<bool, SC_MANY_WRITERS> memory_data_v_sig;
+  sc_signal<bool, SC_MANY_WRITERS> memory_data_f_sig;
+  sc_signal<sc_int<32>, SC_MANY_WRITERS> memory_data_sig;
+  sc_signal<bool, SC_MANY_WRITERS> memory_rw_sig;
 
-  memory *m;
+  l1cache *m;
   core *c;
   coreHelper(sc_module_name name) {
     clock = 0;
-    m = new memory("memory_controller");
+    m = new l1cache("l1cache");
 
     m->clk(clock);
-    m->rdy(memory_rdy_sig);
     m->addr(memory_addr_sig);
     m->addr_v(memory_addr_v_sig);
     m->addr_f(memory_addr_f_sig);
-    m->data_rdy(memory_data_rdy_sig);
-    m->core_memory_request[0](memory_request_sig);
-    m->core_memory_accept[0](memory_accept_sig);
-    request_sigs.init(CORE_NUM-1);
-    accept_sigs.init(CORE_NUM-1);
-    for (int i = 1; i < CORE_NUM; i++) {
-      m->core_memory_request[i](request_sigs[i-1]);
-      m->core_memory_accept[i](accept_sigs[i-1]);
-    }
+    m->data(memory_data_sig);
+    m->data_v(memory_data_v_sig);
+    m->data_f(memory_data_f_sig);
+    m->rw(memory_rw_sig);
 
     c = new core(name);
     c->clk(clock);
@@ -58,14 +51,13 @@ public:
     c->t_out_f(t_out_f_sig);
 
     c->rdy(rdy_sig);
-    c->memory_rdy(memory_rdy_sig);
     c->memory_addr(memory_addr_sig);
     c->memory_addr_v(memory_addr_v_sig);
     c->memory_addr_f(memory_addr_f_sig);
-    c->memory_data_rdy(memory_data_rdy_sig);
-    c->memory_request(memory_request_sig);
-    c->memory_accept(memory_accept_sig);
-
+    c->memory_data(memory_data_sig);
+    c->memory_data_v(memory_data_v_sig);
+    c->memory_data_f(memory_data_f_sig);
+    c->memory_rw(memory_rw_sig);
   }
 
   void wait() {
@@ -110,7 +102,7 @@ public:
     while (i++ != 1000) {
       wait();
     }
-    std::cout << "Number of memory cycles is " << c->mem_cycles << std::endl;
+    Stats::print_memory_cycles();
     sc_stop();
   }
 

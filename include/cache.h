@@ -16,6 +16,7 @@
 
 #include <table.h>
 #include <types.h>
+#include <parameters.h>
 
 class AddressTableEntry {
   private:
@@ -67,8 +68,8 @@ SC_MODULE(l1cache) {
   // operation type
   sc_in<bool> rw; // true means read and false means write
   // If data not available in cache read from l2cache
-  //sc_signal<bool> memory_request;
-  //sc_signal<bool> memory_accept;
+  //sc_out<bool> memory_request;
+  //sc_in<bool> memory_accept;
 
   int size;
   AddressTable at;
@@ -87,6 +88,50 @@ SC_MODULE(l1cache) {
     data_v.initialize(false);
     data_f.initialize(false);
     data.initialize(0);
+
+    SC_CTHREAD(receive, clk.pos());
+  }
+
+};
+
+SC_MODULE(l2cache) {
+  sc_in_clk clk;
+  // Read memory address
+  sc_in<bool> addr_v;
+  sc_out<bool> addr_f;
+  sc_in<mem_addr> addr;
+  // Write/read data
+  sc_inout<bool> data_v;
+  sc_inout<bool> data_f;
+  sc_inout<sc_int<32> > data;
+  // Core memory request lines
+  sc_vector<sc_in<bool> > core_memory_request;
+  sc_vector<sc_out<bool> > core_memory_accept;
+  // operation type
+  sc_in<bool> rw; // true means read and false means write
+  // If data not available in cache read from the right memory segment
+  //sc_signal<bool> memory_request;
+  //sc_signal<bool> memory_accept;
+
+  int size;
+  AddressTable at;
+
+  // Read a memory request from the core
+  void receive();
+
+  void read_data();
+  void write_data();
+
+  SC_HAS_PROCESS(l2cache);
+
+  l2cache(sc_module_name name, int s = 320) : sc_module(name), at(s) {
+    size = s;
+    addr_f.initialize(false);
+    data_v.initialize(false);
+    data_f.initialize(false);
+    data.initialize(0);
+    core_memory_request.init(L2CACHECORENUM);
+    core_memory_accept.init(L2CACHECORENUM);
 
     SC_CTHREAD(receive, clk.pos());
   }

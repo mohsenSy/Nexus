@@ -21,6 +21,7 @@ public:
     clock = 0;
     l1 = new l1cache("l1cache");
 
+
     l1->clk(clock);
     l1->addr_v(addr_v_sig);
     l1->addr_f(addr_f_sig);
