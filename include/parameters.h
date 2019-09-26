@@ -4,8 +4,10 @@
 // Core parameters
 #define BUFFER_DEPTH 2 // Number of buffered tasks at the core level
 
-// Memory Controller parameters
-#define MEM_FETCH_TIME 10 // Number of cycles required to read from memory
+// Board parameters
+#define CORE_NUM 128 // Number of simulated cores in the System Board
+#define TASK_NUM 101 // Number of tasks buffered in system board for execution
+#define READY_QUEUE_NUM 10
 
 // Memory cache parameters
 #define L1CACHESIZE 32
@@ -14,10 +16,11 @@
 #define L2CACHECORENUM 8
 #define L2CACHEDELAY 4
 
-// Board parameters
-#define CORE_NUM 128 // Number of simulated cores in the System Board
-#define TASK_NUM 101 // Number of tasks buffered in system board for execution
-#define READY_QUEUE_NUM 10
+// Memory Controller parameters
+#define MEM_FETCH_TIME 10 // Number of cycles required to read from memory
+#define MEMORY_SEGMENT_SIZE 1024
+#define NUMA_NODES CORE_NUM / L2CACHECORENUM
+
 
 // Nexus 1 parameters
 #define NEXUS1_TASK_NUM 24

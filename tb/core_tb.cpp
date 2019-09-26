@@ -68,8 +68,10 @@ public:
     l2->data_v(l2_memory_data_v_sig);
     l2->data_f(l2_memory_data_f_sig);
     l2->rw(l2_memory_rw_sig);
-    l2->core_memory_request[0](l1_memory_request_sig);
-    l2->core_memory_accept[0](l1_memory_accept_sig);
+    for (int i = 0; i < l2->core_memory_request.size(); i++) {
+      l2->core_memory_request[i](l1_memory_request_sig);
+      l2->core_memory_accept[i](l1_memory_accept_sig);
+    }
 
     c = new core(name);
     c->clk(clock);

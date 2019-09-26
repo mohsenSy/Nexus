@@ -61,8 +61,10 @@ public:
     l2->data_f(l2_data_f_sig);
     l2->data(l2_data_sig);
     l2->rw(l2_rw_sig);
-    l2->core_memory_request[0](memory_request_sig);
-    l2->core_memory_accept[0](memory_accept_sig);
+    for (int i = 0; i < l2->core_memory_request.size(); i++) {
+      l2->core_memory_request[i](memory_request_sig);
+      l2->core_memory_accept[i](memory_accept_sig);
+    }
 
   }
 
