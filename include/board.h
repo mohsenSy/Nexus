@@ -5,7 +5,7 @@
 
 #include <task.h>
 #include <core.h>
-#include <memory.h>
+#include <cache.h>
 #include <nexus2.h>
 #include <string>
 
@@ -23,21 +23,29 @@ SC_MODULE(board) {
   sc_vector<sc_signal<bool> > t_in_v_sigs;
   sc_vector<sc_signal<bool> > t_in_f_sigs;
   sc_vector<sc_signal<task> > t_out_sigs;
-  //sc_vector<sc_signal<bool, SC_MANY_WRITERS> > t_out_v_sigs;
   sc_vector<sc_signal<bool> > t_out_v_sigs;
   sc_vector<sc_signal<bool> > t_out_f_sigs;
-  //sc_vector<sc_signal<bool, SC_MANY_WRITERS> > rdy_sigs;
   sc_vector<sc_signal<bool> > rdy_sigs;
-  //sc_vector<sc_signal<bool, SC_MANY_WRITERS> > finished_sigs;
 
-  memory* mem;
-  sc_signal<bool, SC_MANY_WRITERS> memory_rdy_sig;
-  sc_signal<mem_addr, SC_MANY_WRITERS> memory_addr_sig;
-  sc_signal<bool, SC_MANY_WRITERS> memory_addr_v_sig;
-  sc_signal<bool, SC_MANY_WRITERS> memory_addr_f_sig;
-  sc_signal<bool, SC_MANY_WRITERS> memory_data_rdy_sig;
-  sc_vector<sc_signal<bool> > memory_request_sigs;
-  sc_vector<sc_signal<bool> > memory_accept_sigs;
+  sc_vector<l1cache> l1s;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > memory_addr_v_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > memory_addr_f_sigs;
+  sc_vector<sc_signal<mem_addr, SC_MANY_WRITERS> > memory_addr_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > memory_data_v_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > memory_data_f_sigs;
+  sc_vector<sc_signal<sc_int<32>, SC_MANY_WRITERS> > memory_data_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > memory_rw_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > l1_memory_request_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > l1_memory_accept_sigs;
+
+  sc_vector<l2cache> l2s;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > l2_memory_addr_v_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > l2_memory_addr_f_sigs;
+  sc_vector<sc_signal<mem_addr, SC_MANY_WRITERS> > l2_memory_addr_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > l2_memory_data_v_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > l2_memory_data_f_sigs;
+  sc_vector<sc_signal<sc_int<32>, SC_MANY_WRITERS> > l2_memory_data_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > l2_memory_rw_sigs;
 
   // Nexus
   nexus *nex;
@@ -75,27 +83,76 @@ SC_MODULE(board) {
 
   SC_HAS_PROCESS(board);
 
-  board(sc_module_name name, bool use_nexus=true) :sc_module(name) {
+  static l1cache* creator_l1cache(const char* name, size_t i) {
+    return new l1cache("l1cache" + i);
+  }
+  static l2cache* creator_l2cache(const char* name, size_t i) {
+    return new l2cache("l2cache" + i);
+  }
+
+  board(sc_module_name name, bool use_nexus=true) :sc_module(name), l1s("l1cache_vector"), rdy_sigs("rdy_sigs"),
+      t_out_f_sigs("t_out_f_sigs"), t_out_v_sigs("t_out_v_sigs"), t_out_sigs("t_out_sigs"), t_in_f_sigs("t_in_f_sigs"),
+      t_in_v_sigs("t_in_v_sigs"), t_in_sigs("t_in_sigs"), cores("cores"), l2s("l2cache"){
     SC_CTHREAD(receiveTask, clk.pos());
-    //SC_THREAD(receiveTask);
-    //sensitive << clk;
     SC_CTHREAD(sendTask, clk.pos());
-    //SC_THREAD(sendTask);
-    //sensitive << clk;
     previous_task.id = 0;
 
-    mem = new memory("memory_controller");
-    mem->clk(clk);
-    mem->rdy(memory_rdy_sig);
-    mem->addr(memory_addr_sig);
-    mem->addr_f(memory_addr_f_sig);
-    mem->addr_v(memory_addr_v_sig);
-    mem->data_rdy(memory_data_rdy_sig);
-    memory_request_sigs.init(CORE_NUM);
-    memory_accept_sigs.init(CORE_NUM);
-    for(int i = 0; i < CORE_NUM; i++) {
-      mem->core_memory_request[i](memory_request_sigs[i]);
-      mem->core_memory_accept[i](memory_accept_sigs[i]);
+    l1s.init(CORE_NUM, creator_l1cache);
+    memory_addr_sigs.init(CORE_NUM);
+    memory_addr_v_sigs.init(CORE_NUM);
+    memory_addr_f_sigs.init(CORE_NUM);
+    memory_data_sigs.init(CORE_NUM);
+    memory_data_v_sigs.init(CORE_NUM);
+    memory_data_f_sigs.init(CORE_NUM);
+    memory_rw_sigs.init(CORE_NUM);
+    l1_memory_request_sigs.init(CORE_NUM);
+    l1_memory_accept_sigs.init(CORE_NUM);
+    l2_memory_addr_sigs.init(CORE_NUM);
+    l2_memory_addr_v_sigs.init(CORE_NUM);
+    l2_memory_addr_f_sigs.init(CORE_NUM);
+    l2_memory_data_sigs.init(CORE_NUM);
+    l2_memory_data_v_sigs.init(CORE_NUM);
+    l2_memory_data_f_sigs.init(CORE_NUM);
+    l2_memory_rw_sigs.init(CORE_NUM);
+    for (int i = 0; i < CORE_NUM; i++) {
+      l1s[i].clk(clk);
+      l1s[i].addr(memory_addr_sigs[i]);
+      l1s[i].addr_v(memory_addr_v_sigs[i]);
+      l1s[i].addr_f(memory_addr_f_sigs[i]);
+      l1s[i].data(memory_data_sigs[i]);
+      l1s[i].data_v(memory_data_v_sigs[i]);
+      l1s[i].data_f(memory_data_f_sigs[i]);
+      l1s[i].rw(memory_rw_sigs[i]);
+      l1s[i].memory_request(l1_memory_request_sigs[i]);
+      l1s[i].memory_accept(l1_memory_accept_sigs[i]);
+      l1s[i].l2_addr(l2_memory_addr_sigs[i]);
+      l1s[i].l2_addr_v(l2_memory_addr_v_sigs[i]);
+      l1s[i].l2_addr_f(l2_memory_addr_f_sigs[i]);
+      l1s[i].l2_data(l2_memory_data_sigs[i]);
+      l1s[i].l2_data_v(l2_memory_data_v_sigs[i]);
+      l1s[i].l2_data_f(l2_memory_data_f_sigs[i]);
+      l1s[i].l2_rw(l2_memory_rw_sigs[i]);
+    }
+
+    l2s.init(NUMA_NODES, creator_l2cache);
+    int index = 0;
+    for (int i = 0; i < NUMA_NODES; i++) {
+      //l2s[i] = l2cache("l2cache" + i);
+      l2s[i].clk(clk);
+      l2s[i].addr(l2_memory_addr_sigs[i]);
+      l2s[i].addr_v(l2_memory_addr_v_sigs[i]);
+      l2s[i].addr_f(l2_memory_addr_f_sigs[i]);
+      l2s[i].data(l2_memory_data_sigs[i]);
+      l2s[i].data_v(l2_memory_data_v_sigs[i]);
+      l2s[i].data_f(l2_memory_data_f_sigs[i]);
+      l2s[i].rw(l2_memory_rw_sigs[i]);
+      for (int j = 0; j < L2CACHECORENUM; j++) {
+        index = j + i * L2CACHECORENUM;
+        std::cout << "index is " << index << std::endl;
+        l2s[i].core_memory_accept[j](l1_memory_accept_sigs[i]);
+        l2s[i].core_memory_request[j](l1_memory_request_sigs[i]);
+      }
+      std::cout << "====================" << std::endl;
     }
     if (use_nexus) {
       nex = new nexus("Nexus-1");
@@ -162,15 +219,15 @@ SC_MODULE(board) {
       cores[i].t_out(t_out_sigs[i]);
       cores[i].t_out_v(t_out_v_sigs[i]);
       cores[i].t_out_f(t_out_f_sigs[i]);
-      t_out_f_sigs[i].write(false);
       cores[i].rdy(rdy_sigs[i]);
-      cores[i].memory_rdy(memory_rdy_sig);
-      cores[i].memory_addr(memory_addr_sig);
-      cores[i].memory_addr_v(memory_addr_v_sig);
-      cores[i].memory_addr_f(memory_addr_f_sig);
-      cores[i].memory_data_rdy(memory_data_rdy_sig);
-      cores[i].memory_request(memory_request_sigs[i]);
-      cores[i].memory_accept(memory_accept_sigs[i]);
+      t_out_f_sigs[i].write(false);
+      cores[i].memory_addr(memory_addr_sigs[i]);
+      cores[i].memory_addr_v(memory_addr_v_sigs[i]);
+      cores[i].memory_addr_f(memory_addr_f_sigs[i]);
+      cores[i].memory_data(memory_data_sigs[i]);
+      cores[i].memory_data_v(memory_data_v_sigs[i]);
+      cores[i].memory_data_f(memory_data_f_sigs[i]);
+      cores[i].memory_rw(memory_rw_sigs[i]);
     }
   }
 };

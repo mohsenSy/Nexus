@@ -109,6 +109,8 @@ SC_MODULE(l1cache) {
     SC_CTHREAD(receive, clk.pos());
   }
 
+  l1cache() = default;
+
 };
 
 SC_MODULE(l2cache) {
@@ -152,6 +154,7 @@ SC_MODULE(l2cache) {
 
     SC_CTHREAD(receive, clk.pos());
   }
+  l2cache() = default;
 
 };
 
