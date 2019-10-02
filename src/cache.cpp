@@ -142,17 +142,25 @@ void l2cache::read_data() {
     if (ate.get_addr() == 0) {
       // no address found
       PRINTL("Address %d not found", a);
-      // For testing only
-      at.add_entry(AddressTableEntry(a));
-      for (int i = 0; i < L2CACHEDELAY-1; i++) {
+      memory_segment_addr.write(a);
+      memory_segment_addr_v.write(true);
+      memory_segment_rw.write(true);
+      do {
+        PRINTL("Wait for memory segment to read address %d", a);
         wait();
-      }
-      data_v.write(true);
-      data.write(900);
-      wait();
+      } while(!memory_segment_addr_f.read());
+      memory_segment_addr_v.write(false);
+      memory_segment_data_f.write(false);
       do {
         wait();
-      } while(!data_f.read());
+      } while(!memory_segment_data_v.read());
+      data_v.write(true);
+      int d = memory_segment_data.read();
+      data.write(d);
+      memory_segment_data_f.write(true);
+      do {
+        wait();
+      }while(!data_f.read());
       data_v.write(false);
       wait();
     }
