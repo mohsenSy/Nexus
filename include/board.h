@@ -6,6 +6,7 @@
 #include <task.h>
 #include <core.h>
 #include <cache.h>
+#include <memory_segment.h>
 #include <nexus2.h>
 #include <string>
 
@@ -46,6 +47,15 @@ SC_MODULE(board) {
   sc_vector<sc_signal<bool, SC_MANY_WRITERS> > l2_memory_data_f_sigs;
   sc_vector<sc_signal<sc_int<32>, SC_MANY_WRITERS> > l2_memory_data_sigs;
   sc_vector<sc_signal<bool, SC_MANY_WRITERS> > l2_memory_rw_sigs;
+
+  sc_vector<memory_segment> memory_segments;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > memory_segment_addr_v_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > memory_segment_addr_f_sigs;
+  sc_vector<sc_signal<mem_addr, SC_MANY_WRITERS> > memory_segment_addr_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > memory_segment_data_v_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > memory_segment_data_f_sigs;
+  sc_vector<sc_signal<sc_int<32>, SC_MANY_WRITERS> > memory_segment_data_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > memory_segment_rw_sigs;
 
   // Nexus
   nexus *nex;
@@ -89,8 +99,11 @@ SC_MODULE(board) {
   static l2cache* creator_l2cache(const char* name, size_t i) {
     return new l2cache("l2cache" + i);
   }
+  static memory_segment* creator_memory_segment(const char* name, size_t i) {
+    return new memory_segment("memory segment" + i);
+  }
 
-  board(sc_module_name name, bool use_nexus=true) :sc_module(name), l1s("l1cache_vector"), rdy_sigs("rdy_sigs"),
+  board(sc_module_name n, bool use_nexus=true) :sc_module(n), l1s("l1cache_vector"), rdy_sigs("rdy_sigs"),
       t_out_f_sigs("t_out_f_sigs"), t_out_v_sigs("t_out_v_sigs"), t_out_sigs("t_out_sigs"), t_in_f_sigs("t_in_f_sigs"),
       t_in_v_sigs("t_in_v_sigs"), t_in_sigs("t_in_sigs"), cores("cores"), l2s("l2cache"){
     SC_CTHREAD(receiveTask, clk.pos());
@@ -135,6 +148,14 @@ SC_MODULE(board) {
     }
 
     l2s.init(NUMA_NODES, creator_l2cache);
+    memory_segments.init(NUMA_NODES, creator_memory_segment);
+    memory_segment_addr_v_sigs.init(NUMA_NODES);
+    memory_segment_addr_f_sigs.init(NUMA_NODES);
+    memory_segment_addr_sigs.init(NUMA_NODES);
+    memory_segment_data_v_sigs.init(NUMA_NODES);
+    memory_segment_data_f_sigs.init(NUMA_NODES);
+    memory_segment_data_sigs.init(NUMA_NODES);
+    memory_segment_rw_sigs.init(NUMA_NODES);
     int index = 0;
     for (int i = 0; i < NUMA_NODES; i++) {
       //l2s[i] = l2cache("l2cache" + i);
@@ -146,6 +167,13 @@ SC_MODULE(board) {
       l2s[i].data_v(l2_memory_data_v_sigs[i]);
       l2s[i].data_f(l2_memory_data_f_sigs[i]);
       l2s[i].rw(l2_memory_rw_sigs[i]);
+      l2s[i].memory_segment_addr(memory_segment_addr_sigs[i]);
+      l2s[i].memory_segment_addr_v(memory_segment_addr_v_sigs[i]);
+      l2s[i].memory_segment_addr_f(memory_segment_addr_f_sigs[i]);
+      l2s[i].memory_segment_data(memory_segment_data_sigs[i]);
+      l2s[i].memory_segment_data_v(memory_segment_data_v_sigs[i]);
+      l2s[i].memory_segment_data_f(memory_segment_data_f_sigs[i]);
+      l2s[i].memory_segment_rw(memory_segment_rw_sigs[i]);
       for (int j = 0; j < L2CACHECORENUM; j++) {
         index = j + i * L2CACHECORENUM;
         std::cout << "index is " << index << std::endl;
@@ -153,6 +181,16 @@ SC_MODULE(board) {
         l2s[i].core_memory_request[j](l1_memory_request_sigs[i]);
       }
       std::cout << "====================" << std::endl;
+    }
+    for (int i = 0; i < NUMA_NODES; i++) {
+      memory_segments[i].clk(clk);
+      memory_segments[i].core_addr(memory_segment_addr_sigs[i]);
+      memory_segments[i].core_addr_v(memory_segment_addr_v_sigs[i]);
+      memory_segments[i].core_addr_f(memory_segment_addr_f_sigs[i]);
+      memory_segments[i].core_data(memory_segment_data_sigs[i]);
+      memory_segments[i].core_data_v(memory_segment_data_v_sigs[i]);
+      memory_segments[i].core_data_f(memory_segment_data_f_sigs[i]);
+      memory_segments[i].core_rw(memory_segment_rw_sigs[i]);
     }
     if (use_nexus) {
       nex = new nexus("Nexus-1");

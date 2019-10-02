@@ -131,6 +131,17 @@ SC_MODULE(l2cache) {
   // If data not available in cache read from the right memory segment
   //sc_signal<bool> memory_request;
   //sc_signal<bool> memory_accept;
+  // If data not available in cache read from memory_segment
+  // memory_segment ports
+  sc_out<bool> memory_segment_addr_v;
+  sc_in<bool> memory_segment_addr_f;
+  sc_out<mem_addr> memory_segment_addr;
+  // Write/read data
+  sc_inout<bool> memory_segment_data_v;
+  sc_inout<bool> memory_segment_data_f;
+  sc_inout<sc_int<32> > memory_segment_data;
+  // operation type
+  sc_out<bool> memory_segment_rw; // true means read and false means write
 
   int size;
   AddressTable at;
@@ -148,6 +159,7 @@ SC_MODULE(l2cache) {
     addr_f.initialize(false);
     data_v.initialize(false);
     data_f.initialize(false);
+    memory_segment_addr_v.initialize(false);
     data.initialize(0);
     core_memory_request.init(L2CACHECORENUM);
     core_memory_accept.init(L2CACHECORENUM);

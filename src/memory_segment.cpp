@@ -3,10 +3,11 @@
 #include <utils.h>
 #include <stats.h>
 
-void memory_segment::receive() {
+void memory_segment::core_receive() {
   // Initialization
   // Did not finish reading new address
-  addr_f.write(false);
+  core_addr_f.write(false);
+  PRINTL("Memory Segment Core Receive", "");
   while (true) {
     // Check if address input is valid?
     /*for (int i = 0; i < CORE_NUM; i++) {
@@ -41,7 +42,8 @@ void memory_segment::receive() {
 void memory_segment::remote_receive() {
   // Initialization
   // Did not finish reading new address
-  remote_addr_f.write(false);
+  //remote_addr_f.write(false);
+  PRINTL("Memory Segment Remote Receive", "");
   while (true) {
     // Check if address input is valid?
     /*for (int i = 0; i < CORE_NUM; i++) {
