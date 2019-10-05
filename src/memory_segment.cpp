@@ -115,7 +115,7 @@ int memory_segment::find_memory_segment_index(mem_addr addr) {
   }
 }*/
 
-void memory_segment::bus_receive() {
+/*void memory_segment::bus_receive() {
   bus_addr_f.write(false);
   bus_data_v.write(false);
   bus_data_f.write(false);
@@ -151,7 +151,7 @@ void memory_segment::bus_receive() {
     }
     wait();
   }
-}
+}*/
 
 void memory_bus::receive() {
   addr_f.write(false);
@@ -175,7 +175,7 @@ void memory_bus::receive() {
           wait();
         } while(addr_v.read());
         int aa = *(int *)&a;
-        int segment_index = aa / MEMORY_SEGMENT_SIZE;
+        /*int segment_index = aa / MEMORY_SEGMENT_SIZE;
         memory_request_s[segment_index].write(true);
         do {
           wait();
@@ -189,7 +189,11 @@ void memory_bus::receive() {
         do {
           wait();
         } while(!remote_data_v.read());
-        int d = remote_data.read();
+        int d = remote_data.read();*/
+        int d = 90;
+        for (int i = 0;i < MEMORY_BUS_DELAY-1; i++) {
+          wait();
+        }
         data.write(d);
         data_v.write(true);
         do {
@@ -197,7 +201,7 @@ void memory_bus::receive() {
         } while(!data_f.read());
         data_v.write(false);
         memory_accept_s[i].write(false);
-        memory_request_s[segment_index].write(false);
+        //memory_request_s[segment_index].write(false);
       }
     }
     wait();

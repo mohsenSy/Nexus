@@ -21,6 +21,7 @@
 #define MEMORY_SEGMENT_SIZE 1024
 #define NUMA_NODES CORE_NUM / L2CACHECORENUM
 
+#define MEMORY_BUS_DELAY 4
 
 // Nexus 1 parameters
 #define NEXUS1_TASK_NUM 24

@@ -77,7 +77,7 @@ SC_MODULE(memory_segment) {
     memory_accept.initialize(false);
     bus_memory_request.initialize(false);
     SC_CTHREAD(core_receive, clk.pos());
-    SC_CTHREAD(bus_receive, clk.pos());
+    //SC_CTHREAD(bus_receive, clk.pos());
     PRINTL("new memory segment %s with min address %d, max address %d and index %d", name(), min_addr, max_addr, index);
   }
 };
