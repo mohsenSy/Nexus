@@ -28,13 +28,12 @@ void memory_segment::core_receive() {
         }
         else {
           PRINTL("Address not found here min_addr: %d, max_addr: %d, addr: %d",min_addr, max_addr, a);
-          int segment_index = find_memory_segment_index(a);
-          PRINTL("Address %d should be here %d", a, segment_index);
-          remote_memory_request[segment_index].write(true);
-          PRINTL("Memory segment %d requesting address from %d", index, segment_index);
+          //int segment_index = find_memory_segment_index(a);
+          bus_memory_request.write(true);
           do {
             wait();
-          } while(!remote_memory_accept[segment_index].read());
+          } while(!bus_memory_accept.read());
+          bus_memory_request.write(false);
           remote_rw.write(true);
           remote_addr_v.write(true);
           remote_addr.write(a);
@@ -65,7 +64,7 @@ int memory_segment::find_memory_segment_index(mem_addr addr) {
 }
 
 
-void memory_segment::remote_receive() {
+/*void memory_segment::remote_receive() {
   // Initialization
   // Did not finish reading new address
   remote_addr_f.write(false);
@@ -75,10 +74,6 @@ void memory_segment::remote_receive() {
     for (int i = 0; i < NUMA_NODES; i++) {
       if (i == index) {
         continue;
-      }
-      PRINTL("Dumping memory requests in %d", index);
-      for (int i = 0; i < NUMA_NODES; i++) {
-        PRINTL("Request from %d is %d", i, remote_memory_request[i].read());
       }
       //PRINTL("Memroy segment %d check from segment %d", index, i);
       if (remote_memory_request[i].read()) {
@@ -109,10 +104,100 @@ void memory_segment::remote_receive() {
             } while(!remote_data_f.read());
             remote_data_v.write(false);
           }else {
-            PRINTL("Fatal error, address %d is not here, min_addr: %d, max_addr: %d", a, min_addr, max_addr);
-            sc_stop();
+            PRINTL("Error, address %d is not here, min_addr: %d, max_addr: %d", a, min_addr, max_addr);
+            //sc_stop();
           }
         }
+        remote_memory_accept[i].write(false);
+      }
+    }
+    wait();
+  }
+}*/
+
+void memory_segment::bus_receive() {
+  bus_addr_f.write(false);
+  bus_data_v.write(false);
+  bus_data_f.write(false);
+  PRINTL("reset memory_segment bus_receive", "");
+  while(true) {
+    PRINTL("Check for memory request from bus", "");
+    if (memory_request.read()) {
+      PRINTL("Got memory request", "");
+      memory_accept.write(true);
+      do {
+        wait();
+      } while(!bus_addr_v.read());
+      mem_addr a = bus_addr.read();
+      bus_addr_f.write(true);
+      do {
+        wait();
+      } while(bus_addr_v.read());
+      bus_addr_f.write(false);
+      if (a >= min_addr && a <= max_addr) {
+        int d = 12;
+        bus_data_v.write(true);
+        bus_data.write(d);
+        do {
+          wait();
+        } while(!bus_data_f.read());
+      }
+      else {
+        PRINTL("Error, address %d is not here, min_addr: %d, max_addr: %d", a, min_addr, max_addr);
+        sc_stop();
+      }
+      bus_data_v.write(false);
+      memory_accept.write(false);
+    }
+    wait();
+  }
+}
+
+void memory_bus::receive() {
+  addr_f.write(false);
+  data_v.write(false);
+  data_f.write(false);
+  remote_addr_v.write(false);
+  //remote_data_v.write(false);
+  //remote_data_f.write(false);
+  PRINTL("Reset memory_bus receive", "");
+
+  while(true) {
+    for (int i = 0; i < NUMA_NODES; i++) {
+      if (memory_request_r[i].read()) {
+        memory_accept_s[i].write(true);
+        do {
+          wait();
+        } while(!addr_v.read());
+        mem_addr a = addr.read();
+        addr_f.write(true);
+        do {
+          wait();
+        } while(addr_v.read());
+        int aa = *(int *)&a;
+        int segment_index = aa / MEMORY_SEGMENT_SIZE;
+        memory_request_s[segment_index].write(true);
+        do {
+          wait();
+        } while(!memory_accept_r[segment_index].read());
+        remote_addr_v.write(true);
+        remote_addr.write(a);
+        do {
+          wait();
+        } while(!remote_addr_f.read());
+        remote_addr_v.write(false);
+        do {
+          wait();
+        } while(!remote_data_v.read());
+        int d = remote_data.read();
+        data.write(d);
+        data_v.write(true);
+        do {
+          wait();
+        } while(!data_f.read());
+        data_v.write(false);
+        memory_accept_s[i].write(false);
+        memory_request_s[segment_index].write(false);
       }
     }
     wait();

@@ -67,6 +67,34 @@ SC_MODULE(board) {
   sc_vector<sc_signal<bool, SC_MANY_WRITERS> > remote_memory_segment_accept_sigs;
   sc_vector<sc_signal<bool, SC_MANY_WRITERS> > remote_memory_segment_request_sigs;
 
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > bus_memory_segment_addr_v_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > bus_memory_segment_addr_f_sigs;
+  sc_vector<sc_signal<mem_addr, SC_MANY_WRITERS> > bus_memory_segment_addr_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > bus_memory_segment_data_v_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > bus_memory_segment_data_f_sigs;
+  sc_vector<sc_signal<sc_int<32>, SC_MANY_WRITERS> > bus_memory_segment_data_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > bus_memory_segment_rw_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > bus_memory_segment_accept_sigs;
+  sc_vector<sc_signal<bool, SC_MANY_WRITERS> > bus_memory_segment_request_sigs;
+
+  sc_signal<bool, SC_MANY_WRITERS> remote_memory_bus_addr_v_sig;
+  sc_signal<bool, SC_MANY_WRITERS> remote_memory_bus_addr_f_sig;
+  sc_signal<mem_addr, SC_MANY_WRITERS> remote_memory_bus_addr_sig;
+  sc_signal<bool, SC_MANY_WRITERS> remote_memory_bus_data_v_sig;
+  sc_signal<bool, SC_MANY_WRITERS> remote_memory_bus_data_f_sig;
+  sc_signal<sc_int<32>, SC_MANY_WRITERS> remote_memory_bus_data_sig;
+  sc_signal<bool, SC_MANY_WRITERS> remote_memory_bus_rw_sig;
+
+  sc_signal<bool, SC_MANY_WRITERS> bus_memory_bus_addr_v_sig;
+  sc_signal<bool, SC_MANY_WRITERS> bus_memory_bus_addr_f_sig;
+  sc_signal<mem_addr, SC_MANY_WRITERS> bus_memory_bus_addr_sig;
+  sc_signal<bool, SC_MANY_WRITERS> bus_memory_bus_data_v_sig;
+  sc_signal<bool, SC_MANY_WRITERS> bus_memory_bus_data_f_sig;
+  sc_signal<sc_int<32>, SC_MANY_WRITERS> bus_memory_bus_data_sig;
+  sc_signal<bool, SC_MANY_WRITERS> bus_memory_bus_rw_sig;
+
+  memory_bus *bus;
+
   // Nexus
   nexus *nex;
   sc_signal<task> t_in_sig;
@@ -159,6 +187,25 @@ SC_MODULE(board) {
       l1s[i].l2_rw(l2_memory_rw_sigs[i]);
     }
 
+    bus = new memory_bus("memory_bus");
+
+    bus->clk(clk);
+    bus->addr(remote_memory_bus_addr_sig);
+    bus->addr_v(remote_memory_bus_addr_v_sig);
+    bus->addr_f(remote_memory_bus_addr_f_sig);
+    bus->data(remote_memory_bus_data_sig);
+    bus->data_v(remote_memory_bus_data_v_sig);
+    bus->data_f(remote_memory_bus_data_f_sig);
+    bus->rw(remote_memory_bus_rw_sig);
+
+    bus->remote_addr(bus_memory_bus_addr_sig);
+    bus->remote_addr_v(bus_memory_bus_addr_v_sig);
+    bus->remote_addr_f(bus_memory_bus_addr_f_sig);
+    bus->remote_data(bus_memory_bus_data_sig);
+    bus->remote_data_v(bus_memory_bus_data_v_sig);
+    bus->remote_data_f(bus_memory_bus_data_f_sig);
+    bus->remote_rw(bus_memory_bus_rw_sig);
+
     l2s.init(NUMA_NODES, creator_l2cache);
     memory_segments.init(NUMA_NODES, creator_memory_segment);
     memory_segment_addr_v_sigs.init(NUMA_NODES);
@@ -176,8 +223,19 @@ SC_MODULE(board) {
     remote_memory_segment_data_f_sigs.init(NUMA_NODES);
     remote_memory_segment_data_sigs.init(NUMA_NODES);
     remote_memory_segment_rw_sigs.init(NUMA_NODES);
+
+    bus_memory_segment_addr_v_sigs.init(NUMA_NODES);
+    bus_memory_segment_addr_f_sigs.init(NUMA_NODES);
+    bus_memory_segment_addr_sigs.init(NUMA_NODES);
+    bus_memory_segment_data_v_sigs.init(NUMA_NODES);
+    bus_memory_segment_data_f_sigs.init(NUMA_NODES);
+    bus_memory_segment_data_sigs.init(NUMA_NODES);
+    bus_memory_segment_rw_sigs.init(NUMA_NODES);
+
     remote_memory_segment_accept_sigs.init(NUMA_NODES);
     remote_memory_segment_request_sigs.init(NUMA_NODES);
+    bus_memory_segment_accept_sigs.init(NUMA_NODES);
+    bus_memory_segment_request_sigs.init(NUMA_NODES);
 
     int index = 0;
     for (int i = 0; i < NUMA_NODES; i++) {
@@ -212,21 +270,39 @@ SC_MODULE(board) {
       memory_segments[i].core_data_v(memory_segment_data_v_sigs[i]);
       memory_segments[i].core_data_f(memory_segment_data_f_sigs[i]);
       memory_segments[i].core_rw(memory_segment_rw_sigs[i]);
-      memory_segments[i].remote_addr(remote_memory_segment_addr_sigs[i]);
-      memory_segments[i].remote_addr_v(remote_memory_segment_addr_v_sigs[i]);
-      memory_segments[i].remote_addr_f(remote_memory_segment_addr_f_sigs[i]);
-      memory_segments[i].remote_data(remote_memory_segment_data_sigs[i]);
-      memory_segments[i].remote_data_v(remote_memory_segment_data_v_sigs[i]);
-      memory_segments[i].remote_data_f(remote_memory_segment_data_f_sigs[i]);
-      memory_segments[i].remote_rw(remote_memory_segment_rw_sigs[i]);
+      memory_segments[i].remote_addr(remote_memory_bus_addr_sig);
+      memory_segments[i].remote_addr_v(remote_memory_bus_addr_v_sig);
+      memory_segments[i].remote_addr_f(remote_memory_bus_addr_f_sig);
+      memory_segments[i].remote_data(remote_memory_bus_data_sig);
+      memory_segments[i].remote_data_v(remote_memory_bus_data_v_sig);
+      memory_segments[i].remote_data_f(remote_memory_bus_data_f_sig);
+      memory_segments[i].remote_rw(remote_memory_bus_rw_sig);
+
+      memory_segments[i].bus_addr(bus_memory_bus_addr_sig);
+      memory_segments[i].bus_addr_v(bus_memory_bus_addr_v_sig);
+      memory_segments[i].bus_addr_f(bus_memory_bus_addr_f_sig);
+      memory_segments[i].bus_data(bus_memory_bus_data_sig);
+      memory_segments[i].bus_data_v(bus_memory_bus_data_v_sig);
+      memory_segments[i].bus_data_f(bus_memory_bus_data_f_sig);
+      memory_segments[i].bus_rw(bus_memory_bus_rw_sig);
+
+      memory_segments[i].memory_request(remote_memory_segment_request_sigs[i]);
+      memory_segments[i].memory_accept(remote_memory_segment_accept_sigs[i]);
+      memory_segments[i].bus_memory_request(bus_memory_segment_request_sigs[i]);
+      memory_segments[i].bus_memory_accept(bus_memory_segment_accept_sigs[i]);
+      bus->memory_request_s[i](remote_memory_segment_request_sigs[i]);
+      bus->memory_accept_r[i](remote_memory_segment_accept_sigs[i]);
+      bus->memory_request_r[i](bus_memory_segment_request_sigs[i]);
+      bus->memory_accept_s[i](bus_memory_segment_accept_sigs[i]);
     }
     PRINTL("Number of NUMA nodes is %d", NUMA_NODES);
+    /*index = 0;
     for (int i = 0; i < NUMA_NODES; i++) {
       for (int j = 0; j < NUMA_NODES; j++) {
-        memory_segments[i].remote_memory_accept[j](remote_memory_segment_accept_sigs[i]);
-        memory_segments[i].remote_memory_request[j](remote_memory_segment_request_sigs[i]);
+        memory_segments[j].remote_memory_accept[i](remote_memory_segment_accept_sigs[i]);
+        memory_segments[j].remote_memory_request[i](remote_memory_segment_request_sigs[i]);
       }
-    }
+    }*/
     if (use_nexus) {
       nex = new nexus("Nexus-1");
 
