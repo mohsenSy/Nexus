@@ -15,11 +15,16 @@ void l1cache::receive() {
 }
 
 int l1cache::read_data_l2cache(mem_addr a) {
+  memory_request.write(true);
+  do {
+    PRINTL("memory accept", "");
+    wait();
+  } while(!memory_accept.read());
   l2_rw.write(true);
   l2_data_f.write(false);
   l2_addr_v.write(true);
   l2_addr.write(a);
-  memory_request.write(true);
+  PRINTL("Wait l2_addr_f", "");
   do {
     //PRINTL("Wait l2_addr_f", "");
     wait();
@@ -43,6 +48,7 @@ void l1cache::read_data() {
     addr_f.write(true);
     PRINTL("Reading data for address %d from l1cache", a);
     do {
+      PRINTL("l1cache addr v", "");
       wait();
     } while(addr_v.read());
     addr_f.write(false);
@@ -65,6 +71,7 @@ void l1cache::read_data() {
     data.write(d);
     wait();
     do {
+      PRINTL("l1cache data f", "");
       wait();
     } while(!data_f.read());
     data_v.write(false);
@@ -109,18 +116,18 @@ void l2cache::receive() {
     for (int i =0; i < L2CACHECORENUM; i++) {
       if (core_memory_request[i].read()) {
         core_memory_accept[i].write(true);
-        wait();
         do {
           wait();
         } while(!addr_v.read());
         bool read = rw.read();
         if (read) {
+          PRINTL("read data from l2cache", "");
           read_data();
         }
         else {
           write_data();
         }
-        core_memory_accept[i].write(true);
+        core_memory_accept[i].write(false);
       }
       wait();
     }

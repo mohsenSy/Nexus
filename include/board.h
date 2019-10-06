@@ -160,13 +160,13 @@ SC_MODULE(board) {
     memory_rw_sigs.init(CORE_NUM);
     l1_memory_request_sigs.init(CORE_NUM);
     l1_memory_accept_sigs.init(CORE_NUM);
-    l2_memory_addr_sigs.init(CORE_NUM);
-    l2_memory_addr_v_sigs.init(CORE_NUM);
-    l2_memory_addr_f_sigs.init(CORE_NUM);
-    l2_memory_data_sigs.init(CORE_NUM);
-    l2_memory_data_v_sigs.init(CORE_NUM);
-    l2_memory_data_f_sigs.init(CORE_NUM);
-    l2_memory_rw_sigs.init(CORE_NUM);
+    l2_memory_addr_sigs.init(NUMA_NODES);
+    l2_memory_addr_v_sigs.init(NUMA_NODES);
+    l2_memory_addr_f_sigs.init(NUMA_NODES);
+    l2_memory_data_sigs.init(NUMA_NODES);
+    l2_memory_data_v_sigs.init(NUMA_NODES);
+    l2_memory_data_f_sigs.init(NUMA_NODES);
+    l2_memory_rw_sigs.init(NUMA_NODES);
     for (int i = 0; i < CORE_NUM; i++) {
       l1s[i].clk(clk);
       l1s[i].addr(memory_addr_sigs[i]);
@@ -178,13 +178,6 @@ SC_MODULE(board) {
       l1s[i].rw(memory_rw_sigs[i]);
       l1s[i].memory_request(l1_memory_request_sigs[i]);
       l1s[i].memory_accept(l1_memory_accept_sigs[i]);
-      l1s[i].l2_addr(l2_memory_addr_sigs[i]);
-      l1s[i].l2_addr_v(l2_memory_addr_v_sigs[i]);
-      l1s[i].l2_addr_f(l2_memory_addr_f_sigs[i]);
-      l1s[i].l2_data(l2_memory_data_sigs[i]);
-      l1s[i].l2_data_v(l2_memory_data_v_sigs[i]);
-      l1s[i].l2_data_f(l2_memory_data_f_sigs[i]);
-      l1s[i].l2_rw(l2_memory_rw_sigs[i]);
     }
 
     bus = new memory_bus("memory_bus");
@@ -256,9 +249,16 @@ SC_MODULE(board) {
       l2s[i].memory_segment_data_f(memory_segment_data_f_sigs[i]);
       l2s[i].memory_segment_rw(memory_segment_rw_sigs[i]);
       for (int j = 0; j < L2CACHECORENUM; j++) {
-        index = j + i * L2CACHECORENUM;
-        l2s[i].core_memory_accept[j](l1_memory_accept_sigs[i]);
-        l2s[i].core_memory_request[j](l1_memory_request_sigs[i]);
+        l2s[i].core_memory_accept[j](l1_memory_accept_sigs[index]);
+        l2s[i].core_memory_request[j](l1_memory_request_sigs[index]);
+        l1s[index].l2_addr(l2_memory_addr_sigs[i]);
+        l1s[index].l2_addr_v(l2_memory_addr_v_sigs[i]);
+        l1s[index].l2_addr_f(l2_memory_addr_f_sigs[i]);
+        l1s[index].l2_data(l2_memory_data_sigs[i]);
+        l1s[index].l2_data_v(l2_memory_data_v_sigs[i]);
+        l1s[index].l2_data_f(l2_memory_data_f_sigs[i]);
+        l1s[index].l2_rw(l2_memory_rw_sigs[i]);
+        index++;
       }
     }
     for (int i = 0; i < NUMA_NODES; i++) {
