@@ -175,7 +175,12 @@ void memory_bus::receive() {
           wait();
         } while(addr_v.read());
         int aa = *(int *)&a;
-        /*int segment_index = aa / MEMORY_SEGMENT_SIZE;
+        int segment_index = aa / MEMORY_SEGMENT_SIZE;
+        if (segment_index < 0 || segment_index > NUMA_NODES) {
+          PRINTL("FATAL ERROR: Address not found %d\n", aa);
+          sc_stop();
+        }
+        /*
         memory_request_s[segment_index].write(true);
         do {
           wait();
