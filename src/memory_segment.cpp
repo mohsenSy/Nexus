@@ -31,6 +31,7 @@ void memory_segment::core_receive() {
           //int segment_index = find_memory_segment_index(a);
           bus_memory_request.write(true);
           do {
+            //PRINTL("memory_bus: Wait memory bus accept", "");
             wait();
           } while(!bus_memory_accept.read());
           bus_memory_request.write(false);
@@ -45,12 +46,14 @@ void memory_segment::core_receive() {
             wait();
           } while(!remote_data_v.read());
           int d = remote_data.read();
+          remote_data_f.write(true);
           core_data_v.write(true);
           core_data.write(d);
           do {
             wait();
           } while(!core_data_f.read());
           core_data_v.write(false);
+          remote_data_f.write(false);
         }
       }
     }
@@ -208,6 +211,7 @@ void memory_bus::receive() {
         memory_accept_s[i].write(false);
         //memory_request_s[segment_index].write(false);
       }
+      wait();
     }
     wait();
   }

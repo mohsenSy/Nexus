@@ -22,12 +22,14 @@ class AddressTableEntry {
   private:
     mem_addr addr;
     int data;
+    int time_stamp;
   public:
     AddressTableEntry(mem_addr a, int d = 0) {
       data = d;
       addr = a;
+      time_stamp = sc_time_stamp().value();
     }
-    AddressTableEntry() : addr(0), data(0) {}
+    AddressTableEntry() : addr(0), data(0), time_stamp(sc_time_stamp().value()) {}
     mem_addr get_addr() {
       return addr;
     }
@@ -41,8 +43,11 @@ class AddressTableEntry {
     void set_data(int d) {
       data = d;
     }
+    int get_time_stamp() {
+      return time_stamp;
+    }
     friend ostream& operator <<(ostream& out, const AddressTableEntry& ate) {
-      out << "addr: " << ate.addr << " data: " << ate.data << endl;
+      out << "addr: " << ate.addr << " data: " << ate.data << " time_stamp: " << ate.time_stamp << endl;
       return out;
     }
     bool operator ==(const AddressTableEntry& ate) {
@@ -53,6 +58,20 @@ class AddressTableEntry {
 class AddressTable: public Table<AddressTableEntry> {
   public:
     AddressTable(int c) : Table(c) {}
+    void add_entry(const AddressTableEntry &ate) {
+      if (!Table<AddressTableEntry>::add_entry(ate)) {
+        int stamp = 0;
+        auto entry = begin();
+        for (auto it = begin(); it != end(); it++) {
+          if (it->get_time_stamp() < stamp) {
+            stamp = it->get_time_stamp();
+            entry = it;
+          }
+        }
+        delete_entry(*entry);
+        Table<AddressTableEntry>::add_entry(ate);
+      }
+    }
 };
 
 SC_MODULE(l1cache) {

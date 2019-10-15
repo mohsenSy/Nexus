@@ -17,7 +17,7 @@ void l1cache::receive() {
 int l1cache::read_data_l2cache(mem_addr a) {
   memory_request.write(true);
   do {
-    PRINTL("memory accept", "");
+    //PRINTL("memory accept", "");
     wait();
   } while(!memory_accept.read());
   l2_rw.write(true);
@@ -48,7 +48,6 @@ void l1cache::read_data() {
     addr_f.write(true);
     PRINTL("Reading data for address %d from l1cache", a);
     do {
-      PRINTL("l1cache addr v", "");
       wait();
     } while(addr_v.read());
     addr_f.write(false);
@@ -64,6 +63,7 @@ void l1cache::read_data() {
       d = ate.get_data();
       PRINTL("Address %d found with data %d", a, d);
     }
+    at.add_entry(AddressTableEntry(a, d));
     for (int i = 0; i < L1CACHEDELAY-1; i++) {
       wait();
     }
@@ -71,7 +71,6 @@ void l1cache::read_data() {
     data.write(d);
     wait();
     do {
-      PRINTL("l1cache data f", "");
       wait();
     } while(!data_f.read());
     data_v.write(false);
@@ -153,16 +152,17 @@ void l2cache::read_data() {
       memory_segment_addr_v.write(true);
       memory_segment_rw.write(true);
       do {
-        PRINTL("Wait for memory segment to read address %d", a);
         wait();
       } while(!memory_segment_addr_f.read());
       memory_segment_addr_v.write(false);
       memory_segment_data_f.write(false);
       do {
+        //PRINTL("l2cache wait memory segment data v", "");
         wait();
       } while(!memory_segment_data_v.read());
       data_v.write(true);
       int d = memory_segment_data.read();
+      at.add_entry(AddressTableEntry(a, d));
       data.write(d);
       memory_segment_data_f.write(true);
       do {

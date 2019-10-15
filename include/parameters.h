@@ -5,7 +5,7 @@
 #define BUFFER_DEPTH 2 // Number of buffered tasks at the core level
 
 // Board parameters
-#define CORE_NUM 32 // Number of simulated cores in the System Board
+#define CORE_NUM 64 // Number of simulated cores in the System Board
 #define TASK_NUM 101 // Number of tasks buffered in system board for execution
 #define READY_QUEUE_NUM 10
 
@@ -18,8 +18,9 @@
 
 // Memory Controller parameters
 #define MEM_FETCH_TIME 10 // Number of cycles required to read from memory
-#define MEMORY_SEGMENT_SIZE 1024
+#define TOTAL_MEMORY 8000
 #define NUMA_NODES CORE_NUM / L2CACHECORENUM
+#define MEMORY_SEGMENT_SIZE TOTAL_MEMORY / NUMA_NODES
 
 #define MEMORY_BUS_DELAY 4
 
