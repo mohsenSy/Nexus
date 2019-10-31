@@ -72,7 +72,6 @@ SC_MODULE(board) {
   void send_task_nexus(task);
   void send_task_core(task);
   void send_finished_nexus(task);
-
   SC_HAS_PROCESS(board);
 
   board(sc_module_name name, bool use_nexus=true) :sc_module(name) {

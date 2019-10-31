@@ -128,6 +128,8 @@ SC_MODULE(board) {
   void send_task_nexus(task);
   void send_task_core(task);
   void send_finished_nexus(task);
+  int get_core_index(task);
+  bool numa_aware_scheduling;
 
   SC_HAS_PROCESS(board);
 
@@ -143,12 +145,13 @@ SC_MODULE(board) {
     return new memory_segment("memory segment" + i, (mem_addr)min_addr, (mem_addr)max_addr, i);
   }
 
-  board(sc_module_name n, bool use_nexus=true) :sc_module(n), l1s("l1cache_vector"), rdy_sigs("rdy_sigs"),
+  board(sc_module_name n, bool use_nexus=true, bool numa_aware_scheduling_=false) :sc_module(n), l1s("l1cache_vector"), rdy_sigs("rdy_sigs"),
       t_out_f_sigs("t_out_f_sigs"), t_out_v_sigs("t_out_v_sigs"), t_out_sigs("t_out_sigs"), t_in_f_sigs("t_in_f_sigs"),
       t_in_v_sigs("t_in_v_sigs"), t_in_sigs("t_in_sigs"), cores("cores"), l2s("l2cache"){
     SC_CTHREAD(receiveTask, clk.pos());
     SC_CTHREAD(sendTask, clk.pos());
     previous_task.id = 0;
+    numa_aware_scheduling = numa_aware_scheduling_;
 
     l1s.init(CORE_NUM, creator_l1cache);
     memory_addr_sigs.init(CORE_NUM);

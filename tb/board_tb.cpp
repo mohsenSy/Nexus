@@ -16,7 +16,7 @@ public:
   sc_signal<bool> rdy_sig;
   board *b;
   boardHelper(sc_module_name name) {
-    b = new board(name, false);
+    b = new board(name, false, true);
     clock = 0;
     b->clk(clock);
 
@@ -85,7 +85,7 @@ int sc_main(int argc, char **argv) {
   sc_signal<bool> t_in_v_sig;
   sc_signal<bool> t_in_f_sig;
   sc_signal<bool> rdy_sig;*/
-  std::string fileName = "nexus_tasks.csv";
+  std::string fileName = "tasks_one_input_numa.csv";
   //cout << "Enter file name: ";
   //cin >> fileName;
   std::vector<task> tasks;

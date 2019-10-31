@@ -82,8 +82,22 @@ void board::send_task_nexus(task t) {
   wait();
 }
 
+int board::get_core_index(task t) {
+  if (!numa_aware_scheduling) {
+    return 0;
+  }
+  mem_addr m = t.get_input_arg(0);
+  int size = (int)MEMORY_SEGMENT_SIZE;
+  int index = (m / size) * L2CACHECORENUM;
+  if (index >= CORE_NUM) {
+    index = CORE_NUM - 1;
+  }
+  PRINTL("NUMA Aware scheduler: m: %d size: %d index: %d", m, MEMORY_SEGMENT_SIZE, index);
+  return index;
+}
+
 void board::send_task_core(task t) {
-  int i = 0;
+  int i = get_core_index(t);
   // Loop through the cores to find a ready one
   while( rdy_sigs[i] != true) {
     wait();
